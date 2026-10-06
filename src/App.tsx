@@ -88,13 +88,10 @@ export default function App() {
   });
 
   const [isModalOpen, setIsModalOpen] = useState<boolean>(!scriptUrl);
-  // Config & State
-  const [scriptUrl, setScriptUrl] = useState<string>('');
   const [isUrlModalOpen, setIsUrlModalOpen] = useState<boolean>(false);
   const [isGuideModalOpen, setIsGuideModalOpen] = useState<boolean>(false);
   const [inputUrl, setInputUrl] = useState<string>('');
   const [isDemoMode, setIsDemoMode] = useState<boolean>(false);
-
   // Data
   const [categories, setCategories] = useState<CategoriesState>(DEFAULT_CATEGORIES);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
