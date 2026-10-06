@@ -79,16 +79,15 @@ const DEMO_TRANSACTIONS: Transaction[] = [
 export default function App() {
 
   const MASTER_SCRIPT_URL = 
-  import.meta.env.VITE_APPS_SCRIPT_URL || 
-  "https://script.google.com/macros/s/AKfycbyXTZlHhPAtOQR9UxT7olv_Y0aP_uXsLBs8hFcl1HUuJl_e7UTZe0HTcK9_Qv926qqR/exec";
+    (import.meta.env as any).VITE_APPS_SCRIPT_URL || 
+    "https://script.google.com/macros/s/AKfycbyXTZlHhPAtOQR9UxT7olv_Y0aP_uXsLBs8hFcl1HUuJl_e7UTZe0HTcK9_Qv926qqR/exec";
 
-// Initialize state with the master URL as fallback
-const [scriptUrl, setScriptUrl] = useState<string>(
-  localStorage.getItem('APPS_SCRIPT_URL') || MASTER_SCRIPT_URL
-);
+  const [scriptUrl, setScriptUrl] = useState<string>(() => {
+    const saved = localStorage.getItem('APPS_SCRIPT_URL');
+    return saved && saved.trim() !== '' ? saved : MASTER_SCRIPT_URL;
+  });
 
-// Auto-hide modal if scriptUrl is already valid
-const [isModalOpen, setIsModalOpen] = useState<boolean>(!scriptUrl);
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(!scriptUrl);
   // Config & State
   const [scriptUrl, setScriptUrl] = useState<string>('');
   const [isUrlModalOpen, setIsUrlModalOpen] = useState<boolean>(false);
