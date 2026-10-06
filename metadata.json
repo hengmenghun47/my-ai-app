@@ -1,0 +1,6 @@
+{
+  "name": "Income & Expense Tracker",
+  "description": "Personal Income and Expense Tracker web application synchronized with Google Sheets.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

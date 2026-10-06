@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Income & Expense Tracker - Google Sheets Synced</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js CDN for responsive visual charts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col antialiased selection:bg-emerald-100 selection:text-emerald-900">
+
+  <!-- TOP HEADER -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold shadow-sm">
+          <i data-lucide="wallet" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-lg text-slate-900 leading-tight">LedgerSheet</h1>
+          <p class="text-xs text-slate-500">Google Sheets Personal Tracker</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button id="btnRefresh" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors" title="Sync data">
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5" id="refreshIcon"></i>
+          <span class="hidden sm:inline">Sync</span>
+        </button>
+
+        <button id="btnConfig" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors" title="Settings & URL">
+          <i data-lucide="settings" class="w-3.5 h-3.5"></i>
+          <span class="hidden sm:inline">Sheet URL</span>
+        </button>
+
+        <a href="https://docs.google.com/spreadsheets/d/1748vpezYkZU7ZflHUHgNvdefcswgm7bpAN-WS8MrumM/edit" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors">
+          <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+          <span class="hidden md:inline">Open Sheet</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
+
+    <!-- CONNECTION STATUS NOTIFICATION -->
+    <div id="statusBanner" class="hidden mb-6 p-4 rounded-xl border text-sm flex items-start justify-between gap-3 transition-all">
+      <div class="flex items-center gap-2.5">
+        <i id="statusIcon" data-lucide="info" class="w-4 h-4 flex-shrink-0"></i>
+        <span id="statusMessage" class="text-sm"></span>
+      </div>
+      <button id="closeStatusBanner" class="text-slate-400 hover:text-slate-600">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>
+
+    <!-- METRICS CARDS -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+      <!-- Total Income -->
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+        <div class="flex items-center justify-between text-slate-500 mb-2">
+          <span class="text-xs font-medium uppercase tracking-wider">Total Income</span>
+          <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+            <i data-lucide="arrow-down-left" class="w-4 h-4"></i>
+          </div>
+        </div>
+        <div class="text-2xl font-bold text-slate-900" id="totalIncomeDisplay">$0.00</div>
+        <div class="mt-1 text-xs text-slate-500 flex items-center gap-1" id="incomeCountDisplay">
+          <span>0 transactions recorded</span>
+        </div>
+      </div>
+
+      <!-- Total Expenses -->
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+        <div class="flex items-center justify-between text-slate-500 mb-2">
+          <span class="text-xs font-medium uppercase tracking-wider">Total Expenses</span>
+          <div class="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
+            <i data-lucide="arrow-up-right" class="w-4 h-4"></i>
+          </div>
+        </div>
+        <div class="text-2xl font-bold text-slate-900" id="totalExpenseDisplay">$0.00</div>
+        <div class="mt-1 text-xs text-slate-500 flex items-center gap-1" id="expenseCountDisplay">
+          <span>0 transactions recorded</span>
+        </div>
+      </div>
+
+      <!-- Net Balance -->
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+        <div class="flex items-center justify-between text-slate-500 mb-2">
+          <span class="text-xs font-medium uppercase tracking-wider">Net Balance</span>
+          <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+            <i data-lucide="scale" class="w-4 h-4"></i>
+          </div>
+        </div>
+        <div class="text-2xl font-bold text-slate-900" id="netBalanceDisplay">$0.00</div>
+        <div class="mt-1 text-xs text-slate-500 flex items-center gap-1" id="savingsRateDisplay">
+          <span>Calculated from Google Sheet</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN TWO-COLUMN WORKSPACE -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+
+      <!-- LEFT COLUMN: TRANSACTION FORM (5 COLS) -->
+      <section class="lg:col-span-5 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <div class="flex items-center justify-between mb-5 pb-4 border-b border-slate-100">
+          <div>
+            <h2 class="font-bold text-base text-slate-900">New Transaction</h2>
+            <p class="text-xs text-slate-500 mt-0.5">Records append directly to Google Sheet "Data" tab</p>
+          </div>
+          <span class="text-xs font-mono text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">Live Sync</span>
+        </div>
+
+        <form id="transactionForm" class="space-y-4">
+          <!-- Type Toggle (Income vs Expense) -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">Transaction Type</label>
+            <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl" id="typeToggleContainer">
+              <button type="button" id="btnTypeExpense" class="py-2.5 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 bg-white text-rose-600 shadow-sm">
+                <i data-lucide="trending-down" class="w-4 h-4"></i>
+                Expense
+              </button>
+              <button type="button" id="btnTypeIncome" class="py-2.5 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 text-slate-600 hover:text-slate-900">
+                <i data-lucide="trending-up" class="w-4 h-4"></i>
+                Income
+              </button>
+            </div>
+            <input type="hidden" id="txType" value="Expense" />
+          </div>
+
+          <!-- Date & Amount row -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label for="txDate" class="block text-xs font-medium text-slate-700 mb-1">Date</label>
+              <input type="date" id="txDate" required class="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors" />
+            </div>
+
+            <div>
+              <label for="txAmount" class="block text-xs font-medium text-slate-700 mb-1">Amount ($)</label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 text-sm font-semibold">$</span>
+                <input type="number" id="txAmount" step="0.01" min="0.01" placeholder="0.00" required class="w-full pl-7 pr-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Category Select (Dynamically Populated) -->
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label for="txCategory" class="block text-xs font-medium text-slate-700">Category</label>
+              <span class="text-[11px] text-slate-400">From "Settings" tab</span>
+            </div>
+            <select id="txCategory" required class="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors">
+              <option value="">Loading categories...</option>
+            </select>
+          </div>
+
+          <!-- Note -->
+          <div>
+            <label for="txNote" class="block text-xs font-medium text-slate-700 mb-1">Note / Description (Optional)</label>
+            <input type="text" id="txNote" placeholder="e.g. Grocery trip, Monthly salary, Coffee..." class="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors" />
+          </div>
+
+          <!-- Submit Button -->
+          <button type="submit" id="btnSubmitTx" class="w-full mt-2 py-3 px-4 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-medium text-sm rounded-xl shadow-sm hover:shadow transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+            <i data-lucide="plus-circle" class="w-4 h-4" id="submitIcon"></i>
+            <span id="submitBtnText">Add to Google Sheet</span>
+          </button>
+        </form>
+      </section>
+
+      <!-- RIGHT COLUMN: DASHBOARD CHARTS & RECENT ENTRIES (7 COLS) -->
+      <section class="lg:col-span-7 space-y-6">
+
+        <!-- Visual Analytics Chart Card -->
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+          <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+            <div>
+              <h2 class="font-bold text-base text-slate-900">Financial Breakdown</h2>
+              <p class="text-xs text-slate-500 mt-0.5">Visual representation of income vs expenses & spending by category</p>
+            </div>
+            <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-lg">
+              <button id="btnChartTypeComparison" class="px-2.5 py-1 text-xs font-medium rounded-md bg-white text-slate-900 shadow-xs">Comparison</button>
+              <button id="btnChartTypeBreakdown" class="px-2.5 py-1 text-xs font-medium rounded-md text-slate-600 hover:text-slate-900">Categories</button>
+            </div>
+          </div>
+
+          <!-- Charts Area -->
+          <div class="h-64 relative flex items-center justify-center">
+            <canvas id="analyticsChart"></canvas>
+            <div id="chartEmptyState" class="hidden absolute inset-0 flex flex-col items-center justify-center text-slate-400">
+              <i data-lucide="bar-chart-3" class="w-8 h-8 mb-2 stroke-1"></i>
+              <span class="text-xs">No records available yet. Add a transaction or sync your sheet.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Records Table Card -->
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100">
+            <div>
+              <h2 class="font-bold text-base text-slate-900">Recent Transactions</h2>
+              <p class="text-xs text-slate-500 mt-0.5">Rows read from Google Sheet "Data" tab</p>
+            </div>
+            
+            <!-- Filter by Type -->
+            <div class="flex items-center gap-1 text-xs">
+              <button class="filter-btn px-2.5 py-1 rounded-md font-medium bg-slate-900 text-white transition-colors" data-filter="all">All</button>
+              <button class="filter-btn px-2.5 py-1 rounded-md font-medium text-slate-600 hover:bg-slate-100 transition-colors" data-filter="Expense">Expenses</button>
+              <button class="filter-btn px-2.5 py-1 rounded-md font-medium text-slate-600 hover:bg-slate-100 transition-colors" data-filter="Income">Income</button>
+            </div>
+          </div>
+
+          <!-- Table Container -->
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead>
+                <tr class="text-slate-400 border-b border-slate-100">
+                  <th class="pb-2 font-medium">Date</th>
+                  <th class="pb-2 font-medium">Type</th>
+                  <th class="pb-2 font-medium">Category</th>
+                  <th class="pb-2 font-medium">Note</th>
+                  <th class="pb-2 font-medium text-right">Amount</th>
+                </tr>
+              </thead>
+              <tbody id="recordsTableBody" class="divide-y divide-slate-100">
+                <tr>
+                  <td colspan="5" class="py-8 text-center text-slate-400">
+                    Loading records from your sheet...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </section>
+
+    </div>
+  </main>
+
+  <!-- MODAL: GOOGLE APPS SCRIPT WEB APP URL CONFIGURATION -->
+  <div id="urlModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 transform transition-all">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+            <i data-lucide="link" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-base text-slate-900">Connect Google Sheet</h3>
+            <p class="text-xs text-slate-500">Enter your Apps Script Web App URL</p>
+          </div>
+        </div>
+        <button id="btnCloseModal" class="text-slate-400 hover:text-slate-600">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <p class="text-xs text-slate-600 mb-3 leading-relaxed">
+        To read your categories and record transactions to your Google Sheet 
+        (<span class="font-mono text-slate-700 bg-slate-100 px-1 py-0.5 rounded">1748vpezYkZU7ZflHUHgNvdefcswgm7bpAN-WS8MrumM</span>), 
+        deploy the Google Apps Script backend and paste the Web App URL below.
+      </p>
+
+      <form id="urlForm" class="space-y-4">
+        <div>
+          <label for="inputScriptUrl" class="block text-xs font-semibold text-slate-700 mb-1.5">
+            Google Apps Script Web App URL
+          </label>
+          <input 
+            type="url" 
+            id="inputScriptUrl" 
+            required 
+            placeholder="https://script.google.com/macros/s/.../exec" 
+            class="w-full px-3.5 py-2.5 text-xs font-mono bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+          />
+          <p class="text-[11px] text-slate-400 mt-1">Must end with <code class="text-slate-600 font-semibold">/exec</code>.</p>
+        </div>
+
+        <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
+          <div class="font-semibold flex items-center gap-1 mb-1">
+            <i data-lucide="alert-circle" class="w-3.5 h-3.5 text-amber-600"></i>
+            Deployment Access Setting:
+          </div>
+          When deploying in Google Apps Script, set <strong>"Who has access"</strong> to <strong>"Anyone"</strong> so the web app can read & write rows.
+        </div>
+
+        <div class="flex items-center justify-between pt-2">
+          <button type="button" id="btnUseDemoMode" class="text-xs text-slate-600 hover:text-slate-900 underline">
+            Try Demo Mode First
+          </button>
+          <button type="submit" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5">
+            <i data-lucide="check" class="w-4 h-4"></i>
+            Save & Connect
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- SCRIPT LOGIC -->
+  <script>
+    // State management
+    const STORAGE_KEY = 'ledger_google_apps_script_url';
+    let scriptUrl = localStorage.getItem(STORAGE_KEY) || '';
+    let isDemoMode = false;
+    let currentFilter = 'all';
+    let currentChartMode = 'comparison'; // 'comparison' or 'breakdown'
+
+    let categories = {
+      income: ["Salary", "Freelance", "Investment", "Bonus", "Gift", "Other Income"],
+      expense: ["Food & Dining", "Groceries", "Rent & Housing", "Utilities", "Transportation", "Shopping", "Entertainment", "Healthcare", "Education", "Other Expense"]
+    };
+
+    let records = [];
+    let chartInstance = null;
+
+    // Elements
+    const urlModal = document.getElementById('urlModal');
+    const inputScriptUrl = document.getElementById('inputScriptUrl');
+    const urlForm = document.getElementById('urlForm');
+    const btnCloseModal = document.getElementById('btnCloseModal');
+    const btnConfig = document.getElementById('btnConfig');
+    const btnRefresh = document.getElementById('btnRefresh');
+    const refreshIcon = document.getElementById('refreshIcon');
+    const btnUseDemoMode = document.getElementById('btnUseDemoMode');
+
+    const statusBanner = document.getElementById('statusBanner');
+    const statusMessage = document.getElementById('statusMessage');
+    const statusIcon = document.getElementById('statusIcon');
+    const closeStatusBanner = document.getElementById('closeStatusBanner');
+
+    const txForm = document.getElementById('transactionForm');
+    const txType = document.getElementById('txType');
+    const txDate = document.getElementById('txDate');
+    const txAmount = document.getElementById('txAmount');
+    const txCategory = document.getElementById('txCategory');
+    const txNote = document.getElementById('txNote');
+    const btnTypeExpense = document.getElementById('btnTypeExpense');
+    const btnTypeIncome = document.getElementById('btnTypeIncome');
+    const btnSubmitTx = document.getElementById('btnSubmitTx');
+    const submitBtnText = document.getElementById('submitBtnText');
+    const submitIcon = document.getElementById('submitIcon');
+
+    const totalIncomeDisplay = document.getElementById('totalIncomeDisplay');
+    const totalExpenseDisplay = document.getElementById('totalExpenseDisplay');
+    const netBalanceDisplay = document.getElementById('netBalanceDisplay');
+    const incomeCountDisplay = document.getElementById('incomeCountDisplay');
+    const expenseCountDisplay = document.getElementById('expenseCountDisplay');
+    const savingsRateDisplay = document.getElementById('savingsRateDisplay');
+    const recordsTableBody = document.getElementById('recordsTableBody');
+
+    const btnChartTypeComparison = document.getElementById('btnChartTypeComparison');
+    const btnChartTypeBreakdown = document.getElementById('btnChartTypeBreakdown');
+    const chartCanvas = document.getElementById('analyticsChart');
+    const chartEmptyState = document.getElementById('chartEmptyState');
+
+    // Initialize application on load
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      // Set date to today
+      txDate.value = new Date().toISOString().split('T')[0];
+
+      // Check URL
+      if (!scriptUrl) {
+        showModal();
+      } else {
+        fetchSheetData();
+      }
+    });
+
+    // Modal Handlers
+    function showModal() {
+      inputScriptUrl.value = scriptUrl;
+      urlModal.classList.remove('hidden');
+    }
+    function hideModal() {
+      urlModal.classList.add('hidden');
+    }
+    btnConfig.addEventListener('click', showModal);
+    btnCloseModal.addEventListener('click', hideModal);
+
+    btnUseDemoMode.addEventListener('click', () => {
+      isDemoMode = true;
+      hideModal();
+      loadDemoData();
+      showBanner("Running in Demo Mode. Connect your Google Apps Script URL anytime from the top bar.", "info");
+    });
+
+    urlForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const entered = inputScriptUrl.value.trim();
+      if (!entered.startsWith('https://script.google.com/')) {
+        alert("Please enter a valid Google Apps Script URL starting with https://script.google.com/macros/s/...");
+        return;
+      }
+      scriptUrl = entered;
+      localStorage.setItem(STORAGE_KEY, scriptUrl);
+      isDemoMode = false;
+      hideModal();
+      showBanner("Google Apps Script URL saved! Connecting to sheet...", "info");
+      fetchSheetData();
+    });
+
+    // Banner helper
+    function showBanner(msg, type = "info") {
+      statusBanner.classList.remove('hidden', 'bg-emerald-50', 'text-emerald-800', 'border-emerald-200', 'bg-rose-50', 'text-rose-800', 'border-rose-200', 'bg-blue-50', 'text-blue-800', 'border-blue-200');
+      if (type === 'success') {
+        statusBanner.classList.add('bg-emerald-50', 'text-emerald-800', 'border-emerald-200');
+      } else if (type === 'error') {
+        statusBanner.classList.add('bg-rose-50', 'text-rose-800', 'border-rose-200');
+      } else {
+        statusBanner.classList.add('bg-blue-50', 'text-blue-800', 'border-blue-200');
+      }
+      statusMessage.textContent = msg;
+      lucide.createIcons();
+    }
+    closeStatusBanner.addEventListener('click', () => statusBanner.classList.add('hidden'));
+
+    // Dynamic Category dropdown update based on Type
+    function updateCategoryDropdown() {
+      const type = txType.value;
+      const catList = (type === 'Income') ? categories.income : categories.expense;
+      txCategory.innerHTML = '';
+
+      if (!catList || catList.length === 0) {
+        const opt = document.createElement('option');
+        opt.value = type === 'Income' ? 'General Income' : 'General Expense';
+        opt.textContent = opt.value;
+        txCategory.appendChild(opt);
+        return;
+      }
+
+      catList.forEach(cat => {
+        const opt = document.createElement('option');
+        opt.value = cat;
+        opt.textContent = cat;
+        txCategory.appendChild(opt);
+      });
+    }
+
+    // Type Toggle Buttons
+    btnTypeExpense.addEventListener('click', () => {
+      txType.value = 'Expense';
+      btnTypeExpense.className = "py-2.5 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 bg-white text-rose-600 shadow-sm";
+      btnTypeIncome.className = "py-2.5 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 text-slate-600 hover:text-slate-900";
+      submitBtnText.textContent = "Add Expense to Google Sheet";
+      updateCategoryDropdown();
+    });
+
+    btnTypeIncome.addEventListener('click', () => {
+      txType.value = 'Income';
+      btnTypeIncome.className = "py-2.5 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 bg-white text-emerald-600 shadow-sm";
+      btnTypeExpense.className = "py-2.5 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 text-slate-600 hover:text-slate-900";
+      submitBtnText.textContent = "Add Income to Google Sheet";
+      updateCategoryDropdown();
+    });
+
+    // Fetch data from Google Apps Script Web App
+    async function fetchSheetData() {
+      if (!scriptUrl) {
+        showModal();
+        return;
+      }
+      refreshIcon.classList.add('animate-spin');
+
+      try {
+        const response = await fetch(scriptUrl, {
+          method: 'GET',
+          redirect: 'follow'
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP Error ${response.status}`);
+        }
+
+        const res = await response.json();
+        if (res.status === 'success') {
+          if (res.categories) {
+            categories.income = res.categories.income || categories.income;
+            categories.expense = res.categories.expense || categories.expense;
+          }
+          records = res.records || [];
+          updateCategoryDropdown();
+          renderDashboard();
+          showBanner("Successfully synced with Google Sheet!", "success");
+        } else {
+          throw new Error(res.message || "Failed to read data");
+        }
+      } catch (err) {
+        console.error("Fetch error:", err);
+        showBanner(`Connection Notice: ${err.message}. If CORS/Authorization error, verify Apps Script is deployed with 'Anyone' access.`, "error");
+        // If no records yet, provide fallback demo data to keep interface usable
+        if (records.length === 0) {
+          loadDemoData();
+        }
+      } finally {
+        refreshIcon.classList.remove('animate-spin');
+      }
+    }
+    btnRefresh.addEventListener('click', fetchSheetData);
+
+    // Form Submission: Send to Google Apps Script
+    txForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const newTx = {
+        date: txDate.value,
+        type: txType.value,
+        category: txCategory.value,
+        amount: parseFloat(txAmount.value),
+        note: txNote.value.trim()
+      };
+
+      if (!newTx.amount || newTx.amount <= 0) {
+        alert("Please enter a valid amount greater than 0");
+        return;
+      }
+
+      // UI Loading state
+      btnSubmitTx.disabled = true;
+      submitBtnText.textContent = "Saving to Google Sheet...";
+
+      if (isDemoMode || !scriptUrl) {
+        // Local simulation
+        setTimeout(() => {
+          records.unshift({
+            id: Date.now(),
+            timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
+            ...newTx
+          });
+          btnSubmitTx.disabled = false;
+          submitBtnText.textContent = `Add ${txType.value} to Google Sheet`;
+          txAmount.value = '';
+          txNote.value = '';
+          renderDashboard();
+          showBanner("Transaction recorded locally (Demo Mode).", "success");
+        }, 500);
+        return;
+      }
+
+      try {
+        // Send payload using text/plain to prevent CORS preflight OPTIONS blocking
+        const response = await fetch(scriptUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'text/plain;charset=utf-8'
+          },
+          body: JSON.stringify(newTx),
+          redirect: 'follow'
+        });
+
+        const res = await response.json();
+        if (res.status === 'success') {
+          // Optimistically add or re-fetch
+          records.unshift({
+            id: Date.now(),
+            timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
+            ...newTx
+          });
+          txAmount.value = '';
+          txNote.value = '';
+          renderDashboard();
+          showBanner("Row saved to Google Sheet 'Data' tab successfully!", "success");
+        } else {
+          throw new Error(res.message || "Failed to save row");
+        }
+      } catch (err) {
+        console.error("Submission error:", err);
+        showBanner(`Submission error: ${err.message}. Transaction added locally for preview.`, "error");
+        // Optimistic fallback
+        records.unshift({
+          id: Date.now(),
+          timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
+          ...newTx
+        });
+        txAmount.value = '';
+        txNote.value = '';
+        renderDashboard();
+      } finally {
+        btnSubmitTx.disabled = false;
+        submitBtnText.textContent = `Add ${txType.value} to Google Sheet`;
+      }
+    });
+
+    // Render Dashboard: Totals, Table, and Charts
+    function renderDashboard() {
+      let totalInc = 0;
+      let totalExp = 0;
+      let countInc = 0;
+      let countExp = 0;
+
+      records.forEach(r => {
+        const amt = parseFloat(r.amount) || 0;
+        if (r.type === 'Income') {
+          totalInc += amt;
+          countInc++;
+        } else {
+          totalExp += amt;
+          countExp++;
+        }
+      });
+
+      const netBalance = totalInc - totalExp;
+      totalIncomeDisplay.textContent = `$${totalInc.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      totalExpenseDisplay.textContent = `$${totalExp.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      netBalanceDisplay.textContent = `$${netBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+      if (netBalance >= 0) {
+        netBalanceDisplay.className = "text-2xl font-bold text-emerald-600";
+      } else {
+        netBalanceDisplay.className = "text-2xl font-bold text-rose-600";
+      }
+
+      incomeCountDisplay.textContent = `${countInc} income entries`;
+      expenseCountDisplay.textContent = `${countExp} expense entries`;
+
+      if (totalInc > 0) {
+        const rate = Math.round(((totalInc - totalExp) / totalInc) * 100);
+        savingsRateDisplay.textContent = `Net savings margin: ${rate}%`;
+      } else {
+        savingsRateDisplay.textContent = `Total balance overview`;
+      }
+
+      renderTable();
+      renderChart(totalInc, totalExp);
+    }
+
+    // Render Recent Table
+    function renderTable() {
+      const filtered = records.filter(r => {
+        if (currentFilter === 'all') return true;
+        return r.type === currentFilter;
+      });
+
+      if (filtered.length === 0) {
+        recordsTableBody.innerHTML = `
+          <tr>
+            <td colspan="5" class="py-8 text-center text-slate-400">
+              No transactions found for filter "${currentFilter}".
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      recordsTableBody.innerHTML = filtered.slice(0, 15).map(r => {
+        const isInc = r.type === 'Income';
+        const amtColor = isInc ? 'text-emerald-600 font-semibold' : 'text-slate-900 font-semibold';
+        const sign = isInc ? '+' : '-';
+        return `
+          <tr class="hover:bg-slate-50/80 transition-colors">
+            <td class="py-3 text-slate-600 whitespace-nowrap">${r.date || '-'}</td>
+            <td class="py-3">
+              <span class="inline-flex items-center gap-1 ${isInc ? 'text-emerald-700' : 'text-rose-700'} font-medium">
+                ${isInc ? '↑ Income' : '↓ Expense'}
+              </span>
+            </td>
+            <td class="py-3 text-slate-800 font-medium whitespace-nowrap">${r.category || 'General'}</td>
+            <td class="py-3 text-slate-500 max-w-xs truncate">${r.note || '—'}</td>
+            <td class="py-3 text-right ${amtColor} whitespace-nowrap">
+              ${sign}$${parseFloat(r.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Table Filter Buttons
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.filter-btn').forEach(b => {
+          b.className = "filter-btn px-2.5 py-1 rounded-md font-medium text-slate-600 hover:bg-slate-100 transition-colors";
+        });
+        btn.className = "filter-btn px-2.5 py-1 rounded-md font-medium bg-slate-900 text-white transition-colors";
+        currentFilter = btn.dataset.filter;
+        renderTable();
+      });
+    });
+
+    // Render Chart
+    function renderChart(totalInc, totalExp) {
+      if (chartInstance) {
+        chartInstance.destroy();
+      }
+
+      if (records.length === 0) {
+        chartCanvas.classList.add('hidden');
+        chartEmptyState.classList.remove('hidden');
+        return;
+      }
+
+      chartCanvas.classList.remove('hidden');
+      chartEmptyState.classList.add('hidden');
+
+      const ctx = chartCanvas.getContext('2d');
+
+      if (currentChartMode === 'comparison') {
+        chartInstance = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: ['Total Income', 'Total Expenses'],
+            datasets: [{
+              label: 'Amount ($)',
+              data: [totalInc, totalExp],
+              backgroundColor: ['#10B981', '#F43F5E'],
+              borderRadius: 8,
+              borderSkipped: false,
+              barThickness: 54
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: (ctx) => ` $${ctx.raw.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                }
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                grid: { color: '#F1F5F9' },
+                ticks: {
+                  callback: (value) => `$${value}`
+                }
+              },
+              x: {
+                grid: { display: false }
+              }
+            }
+          }
+        });
+      } else {
+        // Category breakdown for expenses
+        const categoryTotals = {};
+        records.filter(r => r.type === 'Expense').forEach(r => {
+          categoryTotals[r.category] = (categoryTotals[r.category] || 0) + parseFloat(r.amount);
+        });
+
+        const labels = Object.keys(categoryTotals);
+        const dataValues = Object.values(categoryTotals);
+
+        chartInstance = new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels: labels.length > 0 ? labels : ['No Expenses'],
+            datasets: [{
+              data: dataValues.length > 0 ? dataValues : [1],
+              backgroundColor: [
+                '#F43F5E', '#FB923C', '#FBBF24', '#34D399', 
+                '#60A5FA', '#818CF8', '#A78BFA', '#F472B6', '#94A3B8'
+              ],
+              borderWidth: 2,
+              borderColor: '#ffffff'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'right',
+                labels: { boxWidth: 12, font: { size: 11 } }
+              },
+              tooltip: {
+                callbacks: {
+                  label: (ctx) => ` ${ctx.label}: $${Number(ctx.raw).toFixed(2)}`
+                }
+              }
+            },
+            cutout: '68%'
+          }
+        });
+      }
+    }
+
+    btnChartTypeComparison.addEventListener('click', () => {
+      currentChartMode = 'comparison';
+      btnChartTypeComparison.className = "px-2.5 py-1 text-xs font-medium rounded-md bg-white text-slate-900 shadow-xs";
+      btnChartTypeBreakdown.className = "px-2.5 py-1 text-xs font-medium rounded-md text-slate-600 hover:text-slate-900";
+      renderDashboard();
+    });
+
+    btnChartTypeBreakdown.addEventListener('click', () => {
+      currentChartMode = 'breakdown';
+      btnChartTypeBreakdown.className = "px-2.5 py-1 text-xs font-medium rounded-md bg-white text-slate-900 shadow-xs";
+      btnChartTypeComparison.className = "px-2.5 py-1 text-xs font-medium rounded-md text-slate-600 hover:text-slate-900";
+      renderDashboard();
+    });
+
+    // Sample data loader for instant preview
+    function loadDemoData() {
+      records = [
+        { id: 1, date: "2026-10-01", type: "Income", category: "Salary", amount: 4500.00, note: "Monthly primary paycheck" },
+        { id: 2, date: "2026-10-02", type: "Expense", category: "Rent & Housing", amount: 1650.00, note: "Apartment lease" },
+        { id: 3, date: "2026-10-03", type: "Expense", category: "Groceries", amount: 185.40, note: "Whole Foods weekly run" },
+        { id: 4, date: "2026-10-04", type: "Expense", category: "Utilities", amount: 120.00, note: "Electric & internet" },
+        { id: 5, date: "2026-10-04", type: "Income", category: "Freelance", amount: 850.00, note: "Web design project" },
+        { id: 6, date: "2026-10-05", type: "Expense", category: "Food & Dining", amount: 64.20, note: "Dinner with team" },
+        { id: 7, date: "2026-10-06", type: "Expense", category: "Transportation", amount: 45.00, note: "Metro card recharge" }
+      ];
+      updateCategoryDropdown();
+      renderDashboard();
+    }
+  </script>
+</body>
+</html>
