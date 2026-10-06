@@ -130,12 +130,14 @@ export default function App() {
   }, []);
 
   // Sync Category selection when Type changes
-  useEffect(() => {
-    const activeList = txType === 'Income' ? categories.income : categories.expense;
-    if (activeList.length > 0 && (!txCategory || !activeList.includes(txCategory))) {
-      setTxCategory(activeList[0]);
-    }
-  }, [txType, categories]);
+  // Sync Category selection when Type changes
+useEffect(() => {
+  const activeList = txType === 'Income' ? categories.income : categories.expense;
+  if (activeList.length > 0 && (!txCategory || !activeList.includes(txCategory))) {
+    setTxCategory(activeList[0]); //  FIX: Selects the first option by default
+  }
+}, [txType, categories]);
+
 
   // Show Toast
   const showToast = (text: string, type: 'success' | 'error' | 'info' = 'info') => {
