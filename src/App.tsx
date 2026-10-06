@@ -106,38 +106,27 @@ export default function App() {
 
   // Initialize
   useEffect(() => {
-    // 1. Check if an environment variable configuration exists from Vercel deployment first
-    const envUrl = import.meta.env.VITE_GOOGLE_SCRIPT_URL;
-    
-    if (envUrl) {
-      setScriptUrl(envUrl);
-      setInputUrl(envUrl);
-      fetchSheetData(envUrl);
+    const savedUrl = localStorage.getItem(STORAGE_KEY_URL);
+    if (savedUrl) {
+      setScriptUrl(savedUrl);
+      setInputUrl(savedUrl);
+      fetchSheetData(savedUrl);
     } else {
-      // 2. Fall back to manual browser storage if environment token isn't set up yet
-      const savedUrl = localStorage.getItem(STORAGE_KEY_URL);
-      if (savedUrl) {
-        setScriptUrl(savedUrl);
-        setInputUrl(savedUrl);
-        fetchSheetData(savedUrl);
-      } else {
-        // First visit with no configurations: Show setup prompt modal
-        setIsUrlModalOpen(true);
-        setTransactions(DEMO_TRANSACTIONS);
-        setIsDemoMode(true);
-      }
+      // First visit: Show URL modal
+      setIsUrlModalOpen(true);
+      // Also pre-load demo data so user has immediate preview context
+      setTransactions(DEMO_TRANSACTIONS);
+      setIsDemoMode(true);
     }
   }, []);
 
   // Sync Category selection when Type changes
-  // Sync Category selection when Type changes
-useEffect(() => {
-  const activeList = txType === 'Income' ? categories.income : categories.expense;
-  if (activeList.length > 0 && (!txCategory || !activeList.includes(txCategory))) {
-    setTxCategory(activeList[0]); //  FIX: Selects the first option by default
-  }
-}, [txType, categories]);
-
+  useEffect(() => {
+    const activeList = txType === 'Income' ? categories.income : categories.expense;
+    if (activeList.length > 0 && (!txCategory || !activeList.includes(txCategory))) {
+      setTxCategory(activeList[0]);
+    }
+  }, [txType, categories]);
 
   // Show Toast
   const showToast = (text: string, type: 'success' | 'error' | 'info' = 'info') => {
@@ -253,18 +242,4 @@ useEffect(() => {
         throw new Error(res.message || 'Failed to append row');
       }
     } catch (err: unknown) {
-      const errMsg = err instanceof Error ? err.message : String(err);
-      console.warn('Submit error:', errMsg);
-      showToast(`Submission failed: ${errMsg}`, 'error');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // The rest of your return JSX rendering context goes below...
-  return (
-    <div>
-      {/* App Component UI Elements */}
-    </div>
-  );
-}
+      con
