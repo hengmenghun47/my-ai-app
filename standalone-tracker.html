@@ -21,7 +21,7 @@
 </head>
 <body class="bg-[#f8fafc] dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col font-sans selection:bg-emerald-100 dark:selection:bg-emerald-950 transition-colors duration-200">
 
-  <!-- TOP HEADER (No KHR button) -->
+  <!-- TOP HEADER -->
   <header class="bg-white dark:bg-slate-900 border-b border-slate-200/80 dark:border-slate-800 sticky top-0 z-30 shadow-xs transition-colors duration-200">
     <div class="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
       <div class="flex items-center gap-3">
@@ -60,6 +60,42 @@
       </div>
     </div>
   </header>
+
+  <!-- BUSINESS SWITCHER BUTTON BAR (កាហ្វេចុងភូមិ <-> ពូអុក Internet) -->
+  <section class="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200/90 dark:border-slate-800 sticky top-16 z-20 transition-colors shadow-xs">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div class="flex items-center gap-2">
+        <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+          <i data-lucide="store" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400"></i>
+          <span>ជ្រើសរើសសាខា · Switch Branch:</span>
+        </span>
+        <span id="activeBusinessBadge" class="text-[11px] font-mono px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+          Sheet Tab: កាហ្វេចុងភូមិ
+        </span>
+      </div>
+
+      <!-- TWO SWITCH BUTTONS: កាហ្វេចុងភូមិ vs ពូអុក Internet -->
+      <div class="inline-flex p-1 bg-slate-100 dark:bg-slate-800/90 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-inner w-full sm:w-auto">
+        <button
+          type="button"
+          id="btnSwitchCafe"
+          class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer bg-amber-700 text-white shadow-md ring-2 ring-amber-600/30"
+        >
+          <i data-lucide="coffee" class="w-4 h-4 text-amber-300"></i>
+          <span class="font-moul tracking-normal pt-0.5">កាហ្វេចុងភូមិ</span>
+        </button>
+
+        <button
+          type="button"
+          id="btnSwitchInternet"
+          class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-700/50"
+        >
+          <i data-lucide="wifi" class="w-4 h-4 text-blue-200"></i>
+          <span class="font-moul tracking-normal pt-0.5">ពូអុក Internet</span>
+        </button>
+      </div>
+    </div>
+  </section>
 
   <!-- MAIN CONTAINER -->
   <main class="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 flex-1 w-full space-y-6">
@@ -178,6 +214,36 @@
           <div>
             <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Note / Description · ចំណាំ</label>
             <input type="text" placeholder="e.g. Lunch with team, Fuel, Internet..." id="txNote" class="w-full px-3.5 py-2.5 text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-emerald-500 text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500" />
+          </div>
+
+          <!-- Destination Sheet Selector -->
+          <div class="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2">
+            <div class="flex items-center justify-between text-xs font-semibold text-slate-700 dark:text-slate-200">
+              <span class="flex items-center gap-1.5">
+                <i data-lucide="file-text" class="w-3.5 h-3.5 text-emerald-600"></i>
+                <span>Store in Sheet · ទីតាំងរក្សាទុក:</span>
+              </span>
+              <button type="button" id="btnOpenSheetSettings" class="text-[11px] text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer">
+                Configure Sheets ↗
+              </button>
+            </div>
+            <div class="grid grid-cols-3 gap-1.5 p-1 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 text-[11px]">
+              <button type="button" id="btnDestCafe" class="py-1 px-1.5 rounded-lg font-bold flex items-center justify-center gap-1 bg-amber-700 text-white cursor-pointer truncate">
+                <i data-lucide="coffee" class="w-3 h-3 text-amber-300"></i>
+                <span class="font-moul text-[10px] truncate">កាហ្វេចុងភូមិ</span>
+              </button>
+              <button type="button" id="btnDestInternet" class="py-1 px-1.5 rounded-lg font-bold flex items-center justify-center gap-1 text-slate-600 hover:text-slate-900 dark:text-slate-400 cursor-pointer truncate">
+                <i data-lucide="wifi" class="w-3 h-3 text-blue-400"></i>
+                <span class="font-moul text-[10px] truncate">ពូអុក Internet</span>
+              </button>
+              <button type="button" id="btnDestOther" class="py-1 px-1.5 rounded-lg font-bold flex items-center justify-center gap-1 text-slate-600 hover:text-slate-900 dark:text-slate-400 cursor-pointer truncate">
+                <i data-lucide="plus" class="w-3 h-3"></i>
+                <span>Other</span>
+              </button>
+            </div>
+            <div id="destCustomRow" class="hidden pt-1">
+              <input type="text" id="destCustomInput" placeholder="Custom sheet tab name (e.g. Special Orders)..." class="w-full px-2.5 py-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-100" />
+            </div>
           </div>
 
           <!-- Submit Button -->
@@ -400,38 +466,84 @@
 
   </main>
 
-  <!-- URL CONFIG MODAL -->
+  <!-- URL & SEPARATE SHEETS CONFIG MODAL -->
   <div id="urlModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 transition-colors">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 transition-colors">
       <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-4">
-        <h3 class="font-bold text-base text-slate-900 dark:text-white">Google Apps Script URL</h3>
+        <div>
+          <h3 class="font-bold text-base text-slate-900 dark:text-white">Separate Google Sheet Connections</h3>
+          <p class="text-xs text-slate-400">Configure separate Google Sheets for each business</p>
+        </div>
         <button id="btnCloseModal" class="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg cursor-pointer">
           <i data-lucide="x" class="w-4 h-4 text-slate-500 dark:text-slate-400"></i>
         </button>
       </div>
       <form id="urlForm" class="space-y-4">
-        <input type="url" required placeholder="https://script.google.com/macros/s/.../exec" id="urlInput" class="w-full px-3.5 py-2.5 text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-emerald-500 font-mono text-slate-800 dark:text-slate-100" />
-        <button type="submit" class="w-full py-3 bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer">
-          Save & Sync
+        <div class="p-3 bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 rounded-xl space-y-2">
+          <label class="block text-xs font-bold text-amber-900 dark:text-amber-200">Sheet 1: កាហ្វេចុងភូមិ (Spreadsheet ID or URL)</label>
+          <input type="text" id="inputSheetCafe" class="w-full px-3 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-mono text-slate-800 dark:text-slate-100" />
+        </div>
+        <div class="p-3 bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200 rounded-xl space-y-2">
+          <label class="block text-xs font-bold text-blue-900 dark:text-blue-200">Sheet 2: ពូអុក Internet (Separate Spreadsheet ID or URL)</label>
+          <input type="text" id="inputSheetInternet" placeholder="Paste your separate Google Sheet link for Internet..." class="w-full px-3 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-mono text-slate-800 dark:text-slate-100" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Google Apps Script Web App URL (/exec):</label>
+          <input type="url" required placeholder="https://script.google.com/macros/s/.../exec" id="urlInput" class="w-full px-3.5 py-2 text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-emerald-500 font-mono text-slate-800 dark:text-slate-100" />
+        </div>
+        <button type="submit" class="w-full py-2.5 bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer">
+          Save &amp; Connect Separate Sheets
         </button>
       </form>
     </div>
   </div>
 
   <script>
-    const SPREADSHEET_ID = "1748vpezYkZU7ZflHUHgNvdefcswgm7bpAN-WS8MrumM";
+    const DEFAULT_SHEET_ID_CAFE = "1748vpezYkZU7ZflHUHgNvdefcswgm7bpAN-WS8MrumM";
     const STORAGE_KEY = 'ledger_google_apps_script_url';
     const TIMEZONE_DAUN_PENH = 'Asia/Phnom_Penh';
+
+    function extractSpreadsheetId(input) {
+      if (!input) return '';
+      const trimmed = input.trim();
+      const match = trimmed.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+      if (match) return match[1];
+      return trimmed;
+    }
+
+    let sheetIdCafe = localStorage.getItem('ledger_sheet_id_cafe_v5') || DEFAULT_SHEET_ID_CAFE;
+    let sheetIdInternet = localStorage.getItem('ledger_sheet_id_internet_v5') || '';
+
+    const BUSINESS_CONFIGS = {
+      'កាហ្វេចុងភូមិ': {
+        categories: {
+          income: ['Coffee Sales (លក់កាហ្វេ)', 'Drinks (លក់ភេសជ្ជៈ)', 'Food/Bakery (លក់នំ/អាហារ)', 'Takeaway Orders (កម្ម៉ង់ខ្ចប់)', 'Other Income (ចំណូលផ្សេងៗ)'],
+          expense: ['Coffee Beans & Milk (គ្រាប់កាហ្វេ និង ទឹកដោះគោ)', 'Syrup & Ingredients (គ្រឿងផ្សំ/ស្ករ/តែ)', 'Cups & Straws (កែវ និង ទុយោ)', 'Ice & Water (ទឹកកក និង ទឹក)', 'Utilities & Electricity (ភ្លើង និង ទឹក)', 'Rent (ថ្លៃជួលតូប)', 'Staff Salary (ប្រាក់ខែបុគ្គលិក)', 'Other Expense (ចំណាយផ្សេងៗ)']
+        }
+      },
+      'ពូអុក Internet': {
+        categories: {
+          income: ['Internet Hours (ម៉ោងអ៊ីនធឺណិត)', 'Gaming Services (សេវាហ្គេម)', 'Printing & Photocopy (ព្រីន និង ថតចម្លង)', 'Drinks & Snacks (ភេសជ្ជៈ និង នំ)', 'Card Top-up (កាតទូរស័ព្ទ)', 'Other Income (ចំណូលផ្សេងៗ)'],
+          expense: ['ISP Internet Bill (ថ្លៃអ៊ីនធឺណិតប្រចាំខែ)', 'Electricity Bill (ថ្លៃភ្លើង)', 'Computer Hardware & Upgrades (គ្រឿងបន្លាស់កុំព្យូទ័រ)', 'Air Conditioner & Fans (ម៉ាស៊ីនត្រជាក់/កង្ហារ)', 'Rent (ថ្លៃជួលទីតាំង)', 'Staff Salary (ប្រាក់ខែបុគ្គលិក)', 'Other Expense (ចំណាយផ្សេងៗ)']
+        }
+      }
+    };
+
+    let currentBusiness = localStorage.getItem('ledger_active_business_v4') || 'កាហ្វេចុងភូមិ';
+
+    function getStorageKeyForBusiness(b) {
+      return b === 'កាហ្វេចុងភូមិ' ? 'ledger_cached_txs_cafe_v4' : 'ledger_cached_txs_internet_v4';
+    }
+    function getCategoriesKeyForBusiness(b) {
+      return b === 'កាហ្វេចុងភូមិ' ? 'ledger_cached_cats_cafe_v4' : 'ledger_cached_cats_internet_v4';
+    }
 
     let scriptUrl = localStorage.getItem(STORAGE_KEY) || 'https://script.google.com/macros/s/AKfycbyXTZlHhPAtOQR9UxT7olv_Y0aP_uXsLBs8hFcl1HUuJl_e7UTZe0HTcK9_Qv926qqR/exec';
     let currentFilter = 'all';
 
-    let categories = {
-      income: ['Salary', 'Freelance', 'Business', 'Investments', 'Bonus', 'Gifts', 'Other Income'],
-      expense: ['Transportation', 'Health & Wellness', 'Housing & Utilities', 'Food & Dining', 'Groceries', 'Coffee & Drinks', 'Shopping', 'Entertainment', 'Education', 'Other Expense']
-    };
+    let categories = BUSINESS_CONFIGS[currentBusiness].categories;
     try {
-      const savedCats = localStorage.getItem('ledger_cached_categories_v2');
+      const savedCats = localStorage.getItem(getCategoriesKeyForBusiness(currentBusiness));
       if (savedCats) {
         const parsed = JSON.parse(savedCats);
         if (parsed && Array.isArray(parsed.income) && Array.isArray(parsed.expense)) categories = parsed;
@@ -440,7 +552,7 @@
 
     let records = [];
     try {
-      const savedRecs = localStorage.getItem('ledger_cached_transactions_v2');
+      const savedRecs = localStorage.getItem(getStorageKeyForBusiness(currentBusiness));
       if (savedRecs) {
         const parsed = JSON.parse(savedRecs);
         if (Array.isArray(parsed)) records = parsed;
@@ -630,7 +742,7 @@
       };
 
       records.unshift(newRec);
-      try { localStorage.setItem('ledger_cached_transactions_v2', JSON.stringify(records)); } catch(e) {}
+      try { localStorage.setItem(getStorageKeyForBusiness(currentBusiness), JSON.stringify(records)); } catch(e) {}
       txAmount.value = '';
       txNote.value = '';
       renderDashboard();
@@ -641,6 +753,8 @@
             method: 'POST',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify({
+              business: currentBusiness,
+              sheet: currentBusiness,
               date: newRec.date,
               time: newRec.time,
               timestamp: newRec.timestamp,
@@ -877,24 +991,65 @@
       });
     });
 
-    btnConfig.addEventListener('click', () => {
-      urlInput.value = scriptUrl;
+    let currentDest = currentBusiness;
+
+    const btnDestCafe = document.getElementById('btnDestCafe');
+    const btnDestInternet = document.getElementById('btnDestInternet');
+    const btnDestOther = document.getElementById('btnDestOther');
+    const destCustomRow = document.getElementById('destCustomRow');
+    const destCustomInput = document.getElementById('destCustomInput');
+    const btnOpenSheetSettings = document.getElementById('btnOpenSheetSettings');
+
+    function setDestinationOption(opt) {
+      currentDest = opt;
+      if (btnDestCafe) btnDestCafe.className = opt === 'កាហ្វេចុងភូមិ' ? "py-1 px-1.5 rounded-lg font-bold flex items-center justify-center gap-1 bg-amber-700 text-white cursor-pointer truncate" : "py-1 px-1.5 rounded-lg font-bold flex items-center justify-center gap-1 text-slate-600 hover:text-slate-900 dark:text-slate-400 cursor-pointer truncate";
+      if (btnDestInternet) btnDestInternet.className = opt === 'ពូអុក Internet' ? "py-1 px-1.5 rounded-lg font-bold flex items-center justify-center gap-1 bg-blue-600 text-white cursor-pointer truncate" : "py-1 px-1.5 rounded-lg font-bold flex items-center justify-center gap-1 text-slate-600 hover:text-slate-900 dark:text-slate-400 cursor-pointer truncate";
+      if (btnDestOther) btnDestOther.className = opt === 'other' ? "py-1 px-1.5 rounded-lg font-bold flex items-center justify-center gap-1 bg-emerald-600 text-white cursor-pointer truncate" : "py-1 px-1.5 rounded-lg font-bold flex items-center justify-center gap-1 text-slate-600 hover:text-slate-900 dark:text-slate-400 cursor-pointer truncate";
+      if (destCustomRow) {
+        if (opt === 'other') destCustomRow.classList.remove('hidden');
+        else destCustomRow.classList.add('hidden');
+      }
+    }
+
+    if (btnDestCafe) btnDestCafe.addEventListener('click', () => setDestinationOption('កាហ្វេចុងភូមិ'));
+    if (btnDestInternet) btnDestInternet.addEventListener('click', () => setDestinationOption('ពូអុក Internet'));
+    if (btnDestOther) btnDestOther.addEventListener('click', () => setDestinationOption('other'));
+
+    const inputSheetCafe = document.getElementById('inputSheetCafe');
+    const inputSheetInternet = document.getElementById('inputSheetInternet');
+
+    function openConfigModal() {
+      if (inputSheetCafe) inputSheetCafe.value = sheetIdCafe;
+      if (inputSheetInternet) inputSheetInternet.value = sheetIdInternet;
+      if (urlInput) urlInput.value = scriptUrl;
       urlModal.classList.remove('hidden');
-    });
+    }
+
+    btnConfig.addEventListener('click', openConfigModal);
+    if (btnOpenSheetSettings) btnOpenSheetSettings.addEventListener('click', openConfigModal);
+
     btnCloseModal.addEventListener('click', () => urlModal.classList.add('hidden'));
     urlForm.addEventListener('submit', (e) => {
       e.preventDefault();
+      sheetIdCafe = extractSpreadsheetId(inputSheetCafe.value) || DEFAULT_SHEET_ID_CAFE;
+      sheetIdInternet = extractSpreadsheetId(inputSheetInternet.value);
       scriptUrl = urlInput.value.trim();
+
+      localStorage.setItem('ledger_sheet_id_cafe_v5', sheetIdCafe);
+      localStorage.setItem('ledger_sheet_id_internet_v5', sheetIdInternet);
       localStorage.setItem(STORAGE_KEY, scriptUrl);
       urlModal.classList.add('hidden');
       fetchSheetData();
     });
 
-    async function fetchSheetData() {
+    async function fetchSheetData(targetBiz = currentBusiness) {
       if (!scriptUrl) return;
       if (refreshIcon) refreshIcon.classList.add('animate-spin');
       try {
-        const res = await fetch(scriptUrl, { method: 'GET', redirect: 'follow' });
+        const sep = scriptUrl.includes('?') ? '&' : '?';
+        const targetSs = targetBiz === 'កាហ្វេចុងភូមិ' ? sheetIdCafe : (sheetIdInternet || sheetIdCafe);
+        const fullUrl = `${scriptUrl}${sep}business=${encodeURIComponent(targetBiz)}&sheet=${encodeURIComponent(targetBiz)}&spreadsheetId=${encodeURIComponent(targetSs)}`;
+        const res = await fetch(fullUrl, { method: 'GET', redirect: 'follow' });
         if (!res.ok) throw new Error('HTTP ' + res.status);
         const data = await res.json();
         if (data.status === 'success') {
@@ -903,7 +1058,7 @@
               income: data.categories.income?.length ? data.categories.income : categories.income,
               expense: data.categories.expense?.length ? data.categories.expense : categories.expense
             };
-            try { localStorage.setItem('ledger_cached_categories_v2', JSON.stringify(categories)); } catch(e) {}
+            try { localStorage.setItem(getCategoriesKeyForBusiness(targetBiz), JSON.stringify(categories)); } catch(e) {}
             updateCategories();
           }
           if (Array.isArray(data.records)) {
@@ -920,7 +1075,7 @@
                 note: String(r.note || '')
               };
             }).reverse();
-            try { localStorage.setItem('ledger_cached_transactions_v2', JSON.stringify(records)); } catch(e) {}
+            try { localStorage.setItem(getStorageKeyForBusiness(targetBiz), JSON.stringify(records)); } catch(e) {}
             renderDashboard();
           }
         }
@@ -930,6 +1085,48 @@
         if (refreshIcon) refreshIcon.classList.remove('animate-spin');
       }
     }
+
+    // Business switcher logic
+    const btnSwitchCafe = document.getElementById('btnSwitchCafe');
+    const btnSwitchInternet = document.getElementById('btnSwitchInternet');
+    const activeBusinessBadge = document.getElementById('activeBusinessBadge');
+
+    function updateBusinessUI(biz) {
+      currentBusiness = biz;
+      localStorage.setItem('ledger_active_business_v4', biz);
+      if (activeBusinessBadge) activeBusinessBadge.textContent = 'Sheet Tab: ' + biz;
+
+      if (biz === 'កាហ្វេចុងភូមិ') {
+        btnSwitchCafe.className = "flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer bg-amber-700 text-white shadow-md ring-2 ring-amber-600/30";
+        btnSwitchInternet.className = "flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-700/50";
+      } else {
+        btnSwitchInternet.className = "flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer bg-blue-600 text-white shadow-md ring-2 ring-blue-500/30";
+        btnSwitchCafe.className = "flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-700/50";
+      }
+
+      // Load cached categories & records for this business
+      try {
+        const cachedCats = localStorage.getItem(getCategoriesKeyForBusiness(biz));
+        if (cachedCats) categories = JSON.parse(cachedCats);
+        else categories = BUSINESS_CONFIGS[biz].categories;
+      } catch(e) {
+        categories = BUSINESS_CONFIGS[biz].categories;
+      }
+      updateCategories();
+
+      try {
+        const cachedRecs = localStorage.getItem(getStorageKeyForBusiness(biz));
+        if (cachedRecs) records = JSON.parse(cachedRecs);
+        else records = [];
+      } catch(e) {
+        records = [];
+      }
+      renderDashboard();
+      fetchSheetData(biz);
+    }
+
+    if (btnSwitchCafe) btnSwitchCafe.addEventListener('click', () => updateBusinessUI('កាហ្វេចុងភូមិ'));
+    if (btnSwitchInternet) btnSwitchInternet.addEventListener('click', () => updateBusinessUI('ពូអុក Internet'));
 
     if (btnRefresh) {
       btnRefresh.addEventListener('click', fetchSheetData);
@@ -982,9 +1179,7 @@
       });
     }
 
-    updateCategories();
-    renderDashboard();
-    fetchSheetData();
+    updateBusinessUI(currentBusiness);
     lucide.createIcons();
   </script>
 </body>

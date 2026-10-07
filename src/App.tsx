@@ -26,7 +26,14 @@ import {
   ChevronRight,
   Sparkles,
   Moon,
-  Sun
+  Sun,
+  Coffee,
+  Wifi,
+  Store,
+  Monitor,
+  AlertTriangle,
+  Link2,
+  CheckCircle2
 } from 'lucide-react';
 
 interface Transaction {
@@ -45,39 +52,108 @@ interface CategoriesState {
   expense: string[];
 }
 
-const GOOGLE_SHEET_ID = '1748vpezYkZU7ZflHUHgNvdefcswgm7bpAN-WS8MrumM';
-const STORAGE_KEY_URL = 'ledger_google_apps_script_url';
-const STORAGE_KEY_TRANSACTIONS = 'ledger_cached_transactions_v2';
-const STORAGE_KEY_CATEGORIES = 'ledger_cached_categories_v2';
+export type BusinessType = 'កាហ្វេចុងភូមិ' | 'ពូអុក Internet';
+
+export const BUSINESS_CONFIG: Record<
+  BusinessType,
+  {
+    name: BusinessType;
+    shortLabel: string;
+    subtitleKhmer: string;
+    sheetName: string;
+    categories: CategoriesState;
+  }
+> = {
+  'កាហ្វេចុងភូមិ': {
+    name: 'កាហ្វេចុងភូមិ',
+    shortLabel: 'Coffee Shop',
+    subtitleKhmer: 'សាខាហាងកាហ្វេ · Coffee Shop Branch',
+    sheetName: 'កាហ្វេចុងភូមិ',
+    categories: {
+      income: [
+        'Coffee Sales (លក់កាហ្វេ)',
+        'Drinks (លក់ភេសជ្ជៈ)',
+        'Food/Bakery (លក់នំ/អាហារ)',
+        'Takeaway Orders (កម្ម៉ង់ខ្ចប់)',
+        'Other Income (ចំណូលផ្សេងៗ)'
+      ],
+      expense: [
+        'Coffee Beans & Milk (គ្រាប់កាហ្វេ និង ទឹកដោះគោ)',
+        'Syrup & Ingredients (គ្រឿងផ្សំ/ស្ករ/តែ)',
+        'Cups & Straws (កែវ និង ទុយោ)',
+        'Ice & Water (ទឹកកក និង ទឹក)',
+        'Utilities & Electricity (ភ្លើង និង ទឹក)',
+        'Rent (ថ្លៃជួលតូប)',
+        'Staff Salary (ប្រាក់ខែបុគ្គលិក)',
+        'Equipment Maintenance (ជួសជុលម៉ាស៊ីន)',
+        'Other Expense (ចំណាយផ្សេងៗ)'
+      ]
+    }
+  },
+  'ពូអុក Internet': {
+    name: 'ពូអុក Internet',
+    shortLabel: 'Internet Cafe',
+    subtitleKhmer: 'សាខាសេវាអ៊ីនធឺណិត · Internet & Cyber Cafe Branch',
+    sheetName: 'ពូអុក Internet',
+    categories: {
+      income: [
+        'Internet Hours (ម៉ោងអ៊ីនធឺណិត)',
+        'Gaming Services (សេវាហ្គេម)',
+        'Printing & Photocopy (ព្រីន និង ថតចម្លង)',
+        'Drinks & Snacks (ភេសជ្ជៈ និង នំ)',
+        'Card Top-up (កាតទូរស័ព្ទ)',
+        'Computer Repair (ជួសជុលកុំព្យូទ័រ)',
+        'Other Income (ចំណូលផ្សេងៗ)'
+      ],
+      expense: [
+        'ISP Internet Bill (ថ្លៃអ៊ីនធឺណិតប្រចាំខែ)',
+        'Electricity Bill (ថ្លៃភ្លើង)',
+        'Computer Hardware & Upgrades (គ្រឿងបន្លាស់កុំព្យូទ័រ)',
+        'Air Conditioner & Fans (ម៉ាស៊ីនត្រជាក់/កង្ហារ)',
+        'Rent (ថ្លៃជួលទីតាំង)',
+        'Staff Salary (ប្រាក់ខែបុគ្គលិក)',
+        'Drinks/Snacks Stock (ទិញឥវ៉ាន់លក់)',
+        'Network Equipment & Cables (ខ្សែ និង ប្រព័ន្ធណេត)',
+        'Other Expense (ចំណាយផ្សេងៗ)'
+      ]
+    }
+  }
+};
+
+export const DEFAULT_SHEET_ID_CAFE = '1748vpezYkZU7ZflHUHgNvdefcswgm7bpAN-WS8MrumM';
+export const STORAGE_KEY_SHEET_ID_CAFE = 'ledger_sheet_id_cafe_v5';
+export const STORAGE_KEY_SHEET_ID_INTERNET = 'ledger_sheet_id_internet_v5';
+export const STORAGE_KEY_URL_CAFE = 'ledger_script_url_cafe_v5';
+export const STORAGE_KEY_URL_INTERNET = 'ledger_script_url_internet_v5';
+export const STORAGE_KEY_URL = 'ledger_google_apps_script_url';
+export const STORAGE_KEY_ACTIVE_BUSINESS = 'ledger_active_business_v4';
+
+// Helper to extract clean spreadsheet ID from full URL or raw ID
+export function extractSpreadsheetId(input?: string): string {
+  if (!input) return '';
+  const trimmed = input.trim();
+  const match = trimmed.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+  if (match) return match[1];
+  return trimmed;
+}
+
+const GOOGLE_SHEET_ID = DEFAULT_SHEET_ID_CAFE;
+
+const getStorageKeyForBusiness = (biz: BusinessType) => {
+  return biz === 'កាហ្វេចុងភូមិ' ? 'ledger_cached_txs_cafe_v4' : 'ledger_cached_txs_internet_v4';
+};
+
+const getCategoriesKeyForBusiness = (biz: BusinessType) => {
+  return biz === 'កាហ្វេចុងភូមិ' ? 'ledger_cached_cats_cafe_v4' : 'ledger_cached_cats_internet_v4';
+};
+
 const TIMEZONE_DAUN_PENH = 'Asia/Phnom_Penh'; // Daun Penh, Phnom Penh, Cambodia (GMT+7)
 
 const DEFAULT_APPS_SCRIPT_URL =
   (import.meta.env as { VITE_APPS_SCRIPT_URL?: string }).VITE_APPS_SCRIPT_URL ||
   'https://script.google.com/macros/s/AKfycbyXTZlHhPAtOQR9UxT7olv_Y0aP_uXsLBs8hFcl1HUuJl_e7UTZe0HTcK9_Qv926qqR/exec';
 
-const DEFAULT_CATEGORIES: CategoriesState = {
-  income: [
-    'Salary',
-    'Freelance',
-    'Business',
-    'Investments',
-    'Bonus',
-    'Gifts',
-    'Other Income'
-  ],
-  expense: [
-    'Transportation',
-    'Health & Wellness',
-    'Housing & Utilities',
-    'Food & Dining',
-    'Groceries',
-    'Coffee & Drinks',
-    'Shopping',
-    'Entertainment',
-    'Education',
-    'Other Expense'
-  ]
-};
+const DEFAULT_CATEGORIES: CategoriesState = BUSINESS_CONFIG['កាហ្វេចុងភូមិ'].categories;
 
 // Default empty transactions list - records are loaded directly from your Google Sheet
 const DEFAULT_DEMO_TRANSACTIONS: Transaction[] = [];
@@ -259,16 +335,67 @@ function formatMoney(val: number): string {
 }
 
 export default function App() {
-  // Script URL & Config
-  const [scriptUrl, setScriptUrl] = useState<string>(() => {
-    return localStorage.getItem(STORAGE_KEY_URL) || DEFAULT_APPS_SCRIPT_URL;
+  // Individual Google Sheet ID and Web App URL configurations per business
+  const [sheetIdCafe, setSheetIdCafe] = useState<string>(() => {
+    return localStorage.getItem(STORAGE_KEY_SHEET_ID_CAFE) || DEFAULT_SHEET_ID_CAFE;
   });
-  const [inputUrl, setInputUrl] = useState<string>(() => {
-    return localStorage.getItem(STORAGE_KEY_URL) || DEFAULT_APPS_SCRIPT_URL;
+  const [sheetIdInternet, setSheetIdInternet] = useState<string>(() => {
+    return localStorage.getItem(STORAGE_KEY_SHEET_ID_INTERNET) || '';
   });
-  const [isUrlModalOpen, setIsUrlModalOpen] = useState<boolean>(false);
+  const [scriptUrlCafe, setScriptUrlCafe] = useState<string>(() => {
+    return localStorage.getItem(STORAGE_KEY_URL_CAFE) || localStorage.getItem(STORAGE_KEY_URL) || DEFAULT_APPS_SCRIPT_URL;
+  });
+  const [scriptUrlInternet, setScriptUrlInternet] = useState<string>(() => {
+    return localStorage.getItem(STORAGE_KEY_URL_INTERNET) || '';
+  });
+
   const [isScriptModalOpen, setIsScriptModalOpen] = useState<boolean>(false);
   const [isDemoMode, setIsDemoMode] = useState<boolean>(false);
+
+  // Settings modal editable inputs
+  const [settingsTab, setSettingsTab] = useState<'sheets' | 'code'>('sheets');
+  const [inputSheetIdCafe, setInputSheetIdCafe] = useState<string>(() => sheetIdCafe);
+  const [inputSheetIdInternet, setInputSheetIdInternet] = useState<string>(() => sheetIdInternet);
+  const [inputUrlCafe, setInputUrlCafe] = useState<string>(() => scriptUrlCafe);
+  const [inputUrlInternet, setInputUrlInternet] = useState<string>(() => scriptUrlInternet);
+
+  // Connection testing states
+  const [isTestingUrl, setIsTestingUrl] = useState<'cafe' | 'internet' | null>(null);
+  const [testResult, setTestResult] = useState<{ target: 'cafe' | 'internet'; success: boolean; message: string } | null>(null);
+
+  const testConnection = async (target: 'cafe' | 'internet') => {
+    setIsTestingUrl(target);
+    setTestResult(null);
+    const urlToTest = (target === 'cafe' ? inputUrlCafe : inputUrlInternet).trim();
+    if (!urlToTest) {
+      setTestResult({ target, success: false, message: 'សូមបញ្ចូល Google Apps Script Web App URL ជាមុនសិន (Please enter a Web App URL first).' });
+      setIsTestingUrl(null);
+      return;
+    }
+    try {
+      const res = await fetch(urlToTest, { method: 'GET', redirect: 'follow' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (data.status === 'success') {
+        const count = Array.isArray(data.records) ? data.records.length : 0;
+        setTestResult({
+          target,
+          success: true,
+          message: `ភ្ជាប់បានជោគជ័យ! (Connected successfully!) បានរកឃើញ ${count} កំណត់ត្រា (records) ក្នុង Google Sheet នេះ។`
+        });
+      } else {
+        setTestResult({ target, success: false, message: data.message || 'Script returned an error.' });
+      }
+    } catch (err) {
+      setTestResult({
+        target,
+        success: false,
+        message: `បរាជ័យក្នុងការភ្ជាប់ (Connection failed): ${err instanceof Error ? err.message : String(err)}. សូមពិនិត្យមើល Web App ថាបានកំណត់ "Who has access: Anyone" រួចរាល់ហើយឬនៅ។`
+      });
+    } finally {
+      setIsTestingUrl(null);
+    }
+  };
 
   // Theme State (Light / Dark)
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -300,29 +427,52 @@ export default function App() {
     return () => clearInterval(timer);
   }, []);
 
-  // Data - Cached from Google Sheet in localStorage to prevent flashing mock data on refresh
+  // Active Business Switcher ('កាហ្វេចុងភូមិ' or 'ពូអុក Internet')
+  const [activeBusiness, setActiveBusiness] = useState<BusinessType>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY_ACTIVE_BUSINESS);
+    if (saved === 'កាហ្វេចុងភូមិ' || saved === 'ពូអុក Internet') return saved;
+    return 'កាហ្វេចុងភូមិ';
+  });
+
+  // Active sheet info resolved from current business
+  const isInternetConfigured = Boolean(sheetIdInternet.trim() || scriptUrlInternet.trim());
+  const activeSheetId = activeBusiness === 'កាហ្វេចុងភូមិ' ? sheetIdCafe : (sheetIdInternet || '');
+  const activeScriptUrl = activeBusiness === 'កាហ្វេចុងភូមិ' ? scriptUrlCafe : (scriptUrlInternet || '');
+
+  // Data - Cached per business from Google Sheet in localStorage
   const [categories, setCategories] = useState<CategoriesState>(() => {
     try {
-      const cached = localStorage.getItem(STORAGE_KEY_CATEGORIES);
+      const savedBiz = (localStorage.getItem(STORAGE_KEY_ACTIVE_BUSINESS) as BusinessType) || 'កាហ្វេចុងភូមិ';
+      const cached = localStorage.getItem(getCategoriesKeyForBusiness(savedBiz));
       if (cached) {
         const parsed = JSON.parse(cached);
         if (parsed && Array.isArray(parsed.income) && Array.isArray(parsed.expense)) {
           return parsed;
         }
       }
+      return BUSINESS_CONFIG[savedBiz].categories;
     } catch (e) {
       console.warn('Error reading cached categories', e);
     }
-    return DEFAULT_CATEGORIES;
+    return BUSINESS_CONFIG['កាហ្វេចុងភូមិ'].categories;
   });
 
   const [transactions, setTransactions] = useState<Transaction[]>(() => {
     try {
-      const cached = localStorage.getItem(STORAGE_KEY_TRANSACTIONS);
+      const savedBiz = (localStorage.getItem(STORAGE_KEY_ACTIVE_BUSINESS) as BusinessType) || 'កាហ្វេចុងភូមិ';
+      const cached = localStorage.getItem(getStorageKeyForBusiness(savedBiz));
       if (cached) {
         const parsed = JSON.parse(cached);
         if (Array.isArray(parsed)) {
           return parsed;
+        }
+      }
+      // Backward compatibility for cafe
+      if (savedBiz === 'កាហ្វេចុងភូមិ') {
+        const oldCached = localStorage.getItem('ledger_cached_transactions_v2');
+        if (oldCached) {
+          const parsed = JSON.parse(oldCached);
+          if (Array.isArray(parsed)) return parsed;
         }
       }
     } catch (e) {
@@ -332,8 +482,8 @@ export default function App() {
   });
 
   const [isLoading, setIsLoading] = useState<boolean>(() => {
-    // If no cached transactions exist in localStorage, indicate initial loading
-    const cached = localStorage.getItem(STORAGE_KEY_TRANSACTIONS);
+    const savedBiz = (localStorage.getItem(STORAGE_KEY_ACTIVE_BUSINESS) as BusinessType) || 'កាហ្វេចុងភូមិ';
+    const cached = localStorage.getItem(getStorageKeyForBusiness(savedBiz));
     return !cached;
   });
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -342,14 +492,30 @@ export default function App() {
   // Form State
   const [txType, setTxType] = useState<'Expense' | 'Income'>('Expense');
   const [txDate, setTxDate] = useState<string>(() => getDaunPenhNow().dateYMD);
-  const [txCategory, setTxCategory] = useState<string>('Transportation');
+  const [txCategory, setTxCategory] = useState<string>(() => {
+    const savedBiz = (localStorage.getItem(STORAGE_KEY_ACTIVE_BUSINESS) as BusinessType) || 'កាហ្វេចុងភូមិ';
+    return BUSINESS_CONFIG[savedBiz].categories.expense[0];
+  });
   const [txAmount, setTxAmount] = useState<string>('');
   const [txNote, setTxNote] = useState<string>('');
+
+  // Destination Sheet Options in Add Transaction form: allows storing to another sheet tab or another document
+  const [destinationMode, setDestinationMode] = useState<'business' | 'custom'>('business');
+  const [targetDestination, setTargetDestination] = useState<BusinessType>('កាហ្វេចុងភូមិ');
+  const [customDestinationSheet, setCustomDestinationSheet] = useState<string>('');
+  const [customDestinationSpreadsheetId, setCustomDestinationSpreadsheetId] = useState<string>('');
+
+  // Sync destination branch default when activeBusiness switches
+  useEffect(() => {
+    setTargetDestination(activeBusiness);
+  }, [activeBusiness]);
 
   // Search & Filter for main history table
   const [filterType, setFilterType] = useState<'All' | 'Expense' | 'Income'>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [hasCopiedCode, setHasCopiedCode] = useState<boolean>(false);
+  const [hasCopiedDedicatedCode, setHasCopiedDedicatedCode] = useState<boolean>(false);
+  const [selectedCodeType, setSelectedCodeType] = useState<'dedicated' | 'master'>('dedicated');
 
   // =========================================================================
   // DATE RANGE CALCULATOR STATE ("Calculate income or expense from ... to ...")
@@ -362,9 +528,9 @@ export default function App() {
   const [calcEndDate, setCalcEndDate] = useState<string>(() => getDaunPenhNow().dateYMD);
   const [calcTypeFilter, setCalcTypeFilter] = useState<'All' | 'Income' | 'Expense'>('All');
   const [isCalculating, setIsCalculating] = useState<boolean>(false);
-  const [calculationSummary, setCalculationSummary] = useState<string>('Showing data for current month');
+  const [calculationSummary, setCalculationSummary] = useState<string>(() => `Showing data for ${activeBusiness}`);
 
-  // Sync Category when Type changes
+  // Sync Category when Type changes or Categories change
   useEffect(() => {
     const list = txType === 'Income' ? categories.income : categories.expense;
     if (list.length > 0 && (!txCategory || !list.includes(txCategory))) {
@@ -372,11 +538,11 @@ export default function App() {
     }
   }, [txType, categories]);
 
-  // Initial Fetch from Google Sheet
+  // Initial Fetch from Google Sheet for the active business
   useEffect(() => {
-    const urlToUse = scriptUrl || DEFAULT_APPS_SCRIPT_URL;
+    const urlToUse = activeBusiness === 'កាហ្វេចុងភូមិ' ? scriptUrlCafe : (scriptUrlInternet || scriptUrlCafe);
     if (urlToUse) {
-      fetchSheetData(urlToUse);
+      fetchSheetData(activeBusiness);
     } else {
       setIsDemoMode(true);
     }
@@ -389,28 +555,98 @@ export default function App() {
     }, 3500);
   };
 
-  // Fetch from Google Apps Script
-  const fetchSheetData = async (targetUrl = scriptUrl) => {
+  // Switch between businesses ('កាហ្វេចុងភូមិ' <-> 'ពូអុក Internet')
+  const handleSwitchBusiness = (newBiz: BusinessType) => {
+    if (newBiz === activeBusiness) return;
+    setActiveBusiness(newBiz);
+    localStorage.setItem(STORAGE_KEY_ACTIVE_BUSINESS, newBiz);
+
+    // 1. Immediately switch transactions from cache
+    try {
+      const cached = localStorage.getItem(getStorageKeyForBusiness(newBiz));
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed)) {
+          setTransactions(parsed);
+        } else {
+          setTransactions([]);
+        }
+      } else {
+        setTransactions([]);
+      }
+    } catch {
+      setTransactions([]);
+    }
+
+    // 2. Immediately switch categories for the business
+    try {
+      const cachedCats = localStorage.getItem(getCategoriesKeyForBusiness(newBiz));
+      if (cachedCats) {
+        const parsed = JSON.parse(cachedCats);
+        if (parsed?.income && parsed?.expense) {
+          setCategories(parsed);
+          setTxCategory(txType === 'Income' ? parsed.income[0] : parsed.expense[0]);
+        } else {
+          const defaultCats = BUSINESS_CONFIG[newBiz].categories;
+          setCategories(defaultCats);
+          setTxCategory(txType === 'Income' ? defaultCats.income[0] : defaultCats.expense[0]);
+        }
+      } else {
+        const defaultCats = BUSINESS_CONFIG[newBiz].categories;
+        setCategories(defaultCats);
+        setTxCategory(txType === 'Income' ? defaultCats.income[0] : defaultCats.expense[0]);
+      }
+    } catch {
+      const defaultCats = BUSINESS_CONFIG[newBiz].categories;
+      setCategories(defaultCats);
+      setTxCategory(txType === 'Income' ? defaultCats.income[0] : defaultCats.expense[0]);
+    }
+
+    // 3. Reset range calculator info
+    setLastCalculatedInfo(null);
+    setCalculationSummary(`Showing data for ${newBiz}`);
+
+    // 4. Trigger live Google Sheet sync for the selected business using its dedicated sheet & script
+    fetchSheetData(newBiz);
+  };
+
+  // Fetch from Google Apps Script scoped to business and sheet
+  const fetchSheetData = async (
+    targetBiz = activeBusiness,
+    overrideUrl?: string,
+    overrideSheetId?: string
+  ) => {
+    const isInternet = targetBiz === 'ពូអុក Internet';
+    const targetUrl = overrideUrl || (isInternet ? scriptUrlInternet : scriptUrlCafe);
+    const targetSsId = overrideSheetId || (isInternet ? sheetIdInternet : sheetIdCafe);
+
+    // If Internet business is active but no separate script URL or sheet is set, do NOT query cafe script
+    if (isInternet && !targetUrl) {
+      return;
+    }
+
     if (!targetUrl) {
-      setIsUrlModalOpen(true);
+      setIsScriptModalOpen(true);
       return;
     }
 
     setIsLoading(true);
     try {
-      const response = await fetch(targetUrl, { method: 'GET', redirect: 'follow' });
+      const sep = targetUrl.includes('?') ? '&' : '?';
+      const fullUrl = `${targetUrl}${sep}business=${encodeURIComponent(targetBiz)}&sheet=${encodeURIComponent(targetBiz)}&spreadsheetId=${encodeURIComponent(targetSsId)}`;
+      const response = await fetch(fullUrl, { method: 'GET', redirect: 'follow' });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
       const data = await response.json();
       if (data.status === 'success') {
         if (data.categories) {
           const newCats: CategoriesState = {
-            income: data.categories.income?.length ? data.categories.income : DEFAULT_CATEGORIES.income,
-            expense: data.categories.expense?.length ? data.categories.expense : DEFAULT_CATEGORIES.expense
+            income: data.categories.income?.length ? data.categories.income : BUSINESS_CONFIG[targetBiz].categories.income,
+            expense: data.categories.expense?.length ? data.categories.expense : BUSINESS_CONFIG[targetBiz].categories.expense
           };
           setCategories(newCats);
           try {
-            localStorage.setItem(STORAGE_KEY_CATEGORIES, JSON.stringify(newCats));
+            localStorage.setItem(getCategoriesKeyForBusiness(targetBiz), JSON.stringify(newCats));
           } catch (e) {
             console.warn('Storage save category error:', e);
           }
@@ -435,26 +671,25 @@ export default function App() {
           const finalRecords = mapped.reverse();
           setTransactions(finalRecords);
           try {
-            localStorage.setItem(STORAGE_KEY_TRANSACTIONS, JSON.stringify(finalRecords));
+            localStorage.setItem(getStorageKeyForBusiness(targetBiz), JSON.stringify(finalRecords));
           } catch (e) {
             console.warn('Storage save transactions error:', e);
           }
         }
         setIsDemoMode(false);
-        showToast('Google Sheet data synced successfully!', 'success');
+        showToast(`Synced [${targetBiz}] sheet successfully!`, 'success');
       } else {
         throw new Error(data.message || 'Sheet returned error');
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       console.warn('Sync notice:', msg);
-      // Retain cached transactions without injecting demo data
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Form Submit: Auto-captures time via Daun Penh (GMT+7)
+  // Form Submit: Auto-captures time via Daun Penh (GMT+7) and saves to active or chosen destination sheet
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const parsedAmount = parseFloat(txAmount);
@@ -469,6 +704,17 @@ export default function App() {
     const capturedTime = dpNow.timeHMS;
     const capturedTimestamp = `${capturedDate} ${capturedTime}`;
 
+    // Target destination resolution: supports sending this transaction to another sheet tab or document!
+    const effectiveBiz: BusinessType = destinationMode === 'custom' ? activeBusiness : targetDestination;
+    const effectiveSheetName: string = destinationMode === 'custom'
+      ? (customDestinationSheet.trim() || activeBusiness)
+      : targetDestination;
+    const isInternetTarget = effectiveBiz === 'ពូអុក Internet';
+    const effectiveSpreadsheetId: string = destinationMode === 'custom' && customDestinationSpreadsheetId.trim()
+      ? extractSpreadsheetId(customDestinationSpreadsheetId.trim())
+      : (isInternetTarget ? sheetIdInternet : sheetIdCafe);
+    const effectiveScriptUrl: string = isInternetTarget ? scriptUrlInternet : scriptUrlCafe;
+
     const newRecord: Transaction = {
       id: Date.now().toString(),
       date: capturedDate,
@@ -482,28 +728,50 @@ export default function App() {
 
     setIsSubmitting(true);
 
-    if (isDemoMode || !scriptUrl) {
+    // If saving to ពូអុក Internet and no separate Web App URL is connected yet:
+    if (isInternetTarget && !effectiveScriptUrl) {
       setTimeout(() => {
         setTransactions((prev) => {
           const updated = [newRecord, ...prev];
           try {
-            localStorage.setItem(STORAGE_KEY_TRANSACTIONS, JSON.stringify(updated));
+            localStorage.setItem(getStorageKeyForBusiness(effectiveBiz), JSON.stringify(updated));
           } catch {}
           return updated;
         });
         setTxAmount('');
         setTxNote('');
         setIsSubmitting(false);
-        showToast(`Saved locally (Auto-captured at ${dpNow.time12} GMT+7)`, 'success');
+        showToast('រក្សាទុកក្នុងម៉ាស៊ីន (Saved locally). សូមភ្ជាប់ Google Sheet របស់ ពូអុក Internet ក្នុង Settings (</>) ដើម្បីរក្សាទុកលើ Sheet ថ្មី!', 'info');
+      }, 300);
+      return;
+    }
+
+    if (isDemoMode || !effectiveScriptUrl) {
+      setTimeout(() => {
+        setTransactions((prev) => {
+          const updated = [newRecord, ...prev];
+          try {
+            localStorage.setItem(getStorageKeyForBusiness(effectiveBiz), JSON.stringify(updated));
+          } catch {}
+          return updated;
+        });
+        setTxAmount('');
+        setTxNote('');
+        setIsSubmitting(false);
+        showToast(`Saved locally for [${effectiveSheetName}] at ${dpNow.time12} GMT+7`, 'success');
       }, 300);
       return;
     }
 
     try {
-      const response = await fetch(scriptUrl, {
+      const response = await fetch(effectiveScriptUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({
+          business: effectiveBiz,
+          sheet: effectiveSheetName,
+          sheetName: effectiveSheetName,
+          spreadsheetId: effectiveSpreadsheetId,
           date: newRecord.date,
           time: newRecord.time,
           timestamp: newRecord.timestamp,
@@ -520,13 +788,13 @@ export default function App() {
         setTransactions((prev) => {
           const updated = [newRecord, ...prev];
           try {
-            localStorage.setItem(STORAGE_KEY_TRANSACTIONS, JSON.stringify(updated));
+            localStorage.setItem(getStorageKeyForBusiness(effectiveBiz), JSON.stringify(updated));
           } catch {}
           return updated;
         });
         setTxAmount('');
         setTxNote('');
-        showToast(`Saved to Google Sheet at ${dpNow.time12} (Daun Penh GMT+7)!`, 'success');
+        showToast(`Saved to sheet [${effectiveSheetName}] in Google Spreadsheet at ${dpNow.time12}!`, 'success');
       } else {
         throw new Error(res.message || 'Failed to save');
       }
@@ -536,31 +804,46 @@ export default function App() {
       setTransactions((prev) => {
         const updated = [newRecord, ...prev];
         try {
-          localStorage.setItem(STORAGE_KEY_TRANSACTIONS, JSON.stringify(updated));
+          localStorage.setItem(getStorageKeyForBusiness(effectiveBiz), JSON.stringify(updated));
         } catch {}
         return updated;
       });
       setTxAmount('');
       setTxNote('');
-      showToast(`Saved locally. Sheet notice: ${msg}`, 'error');
+      showToast(`Saved locally for [${effectiveSheetName}]. Sheet notice: ${msg}`, 'error');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Save Script URL
-  const handleSaveUrl = (e: React.FormEvent) => {
+  // Save Settings for both sheets and Apps Script URLs
+  const handleSaveSettings = (e: React.FormEvent) => {
     e.preventDefault();
-    const cleanUrl = inputUrl.trim();
-    if (!cleanUrl.startsWith('https://script.google.com/')) {
-      showToast('URL must start with https://script.google.com/macros/s/...', 'error');
-      return;
+    const cleanIdCafe = extractSpreadsheetId(inputSheetIdCafe);
+    const cleanIdInternet = extractSpreadsheetId(inputSheetIdInternet);
+    const cleanUrlCafe = inputUrlCafe.trim();
+    const cleanUrlInternet = inputUrlInternet.trim();
+
+    localStorage.setItem(STORAGE_KEY_SHEET_ID_CAFE, cleanIdCafe);
+    localStorage.setItem(STORAGE_KEY_SHEET_ID_INTERNET, cleanIdInternet);
+    localStorage.setItem(STORAGE_KEY_URL_CAFE, cleanUrlCafe);
+    localStorage.setItem(STORAGE_KEY_URL_INTERNET, cleanUrlInternet);
+    localStorage.setItem(STORAGE_KEY_URL, cleanUrlCafe); // fallback
+
+    setSheetIdCafe(cleanIdCafe);
+    setSheetIdInternet(cleanIdInternet);
+    setScriptUrlCafe(cleanUrlCafe);
+    setScriptUrlInternet(cleanUrlInternet);
+
+    setIsScriptModalOpen(false);
+    showToast('Saved Google Sheet connections successfully!', 'success');
+
+    // Re-sync active business
+    const targetUrl = activeBusiness === 'កាហ្វេចុងភូមិ' ? cleanUrlCafe : cleanUrlInternet;
+    const targetSsId = activeBusiness === 'កាហ្វេចុងភូមិ' ? cleanIdCafe : cleanIdInternet;
+    if (activeBusiness === 'កាហ្វេចុងភូមិ' || cleanUrlInternet) {
+      fetchSheetData(activeBusiness, targetUrl, targetSsId);
     }
-    localStorage.setItem(STORAGE_KEY_URL, cleanUrl);
-    setScriptUrl(cleanUrl);
-    setIsUrlModalOpen(false);
-    setIsDemoMode(false);
-    fetchSheetData(cleanUrl);
   };
 
   // Overall Metrics
@@ -817,11 +1100,11 @@ export default function App() {
     const encoded = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encoded);
-    link.setAttribute('download', `Income_Expense_DaunPenh_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `Ledger_${activeBusiness === 'កាហ្វេចុងភូមិ' ? 'Cafe' : 'Internet'}_DaunPenh_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    showToast('Downloaded CSV Ledger!', 'success');
+    showToast(`Downloaded CSV for [${activeBusiness}]!`, 'success');
   };
 
   // Export Range CSV
@@ -848,56 +1131,69 @@ export default function App() {
     const encoded = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encoded);
-    link.setAttribute('download', `Calculation_${calcStartDate || 'start'}_to_${calcEndDate || 'end'}.csv`);
+    link.setAttribute('download', `Calculation_${activeBusiness === 'កាហ្វេចុងភូមិ' ? 'Cafe' : 'Internet'}_${calcStartDate || 'start'}_to_${calcEndDate || 'end'}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    showToast('Downloaded Date Range Report!', 'success');
+    showToast(`Downloaded Date Range Report for [${activeBusiness}]!`, 'success');
   };
 
-  // Apps Script Code
+  // Apps Script Code (Supports 2 separate Google Spreadsheets & custom sheet tabs)
   const appsScriptCode = `/**
- * Google Apps Script for Personal Income & Expense Tracker
- * Sheet ID: ${GOOGLE_SHEET_ID}
+ * Google Apps Script for Multi-Business Ledger (Separate Google Sheets Support)
+ * Branches: 
+ *   1) កាហ្វេចុងភូមិ
+ *   2) ពូអុក Internet
  * Timezone: Asia/Phnom_Penh (Daun Penh, GMT+7)
  */
 
-const SPREADSHEET_ID = "${GOOGLE_SHEET_ID}";
-const SHEET_DATA_NAME = "Data";
-const SHEET_SETTINGS_NAME = "Settings";
+// Spreadsheet ID for Cafe (កាហ្វេចុងភូមិ)
+const SPREADSHEET_ID_CAFE = "${sheetIdCafe || DEFAULT_SHEET_ID_CAFE}";
+
+// Spreadsheet ID for Internet (ពូអុក Internet) - Can be a completely separate Google Sheet document!
+const SPREADSHEET_ID_INTERNET = "${sheetIdInternet || DEFAULT_SHEET_ID_CAFE}";
+
+const BUSINESS_CAFE = "កាហ្វេចុងភូមិ";
+const BUSINESS_INTERNET = "ពូអុក Internet";
 const TIMEZONE = "Asia/Phnom_Penh"; // Daun Penh, Phnom Penh, Cambodia (GMT+7)
+
+function getTargetSpreadsheet(requestedId, business) {
+  let targetId = requestedId;
+  if (!targetId || String(targetId).trim() === "") {
+    if (business === BUSINESS_INTERNET && SPREADSHEET_ID_INTERNET) {
+      targetId = SPREADSHEET_ID_INTERNET;
+    } else {
+      targetId = SPREADSHEET_ID_CAFE;
+    }
+  }
+  return SpreadsheetApp.openById(targetId.trim());
+}
 
 function doGet(e) {
   try {
-    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-    ensureSheetsInitialized(ss);
+    let targetBusiness = BUSINESS_CAFE;
+    let targetSheetName = BUSINESS_CAFE;
+    let reqSpreadsheetId = "";
 
-    // Read Settings
-    const settingsSheet = ss.getSheetByName(SHEET_SETTINGS_NAME);
-    const lastRowSettings = Math.max(settingsSheet.getLastRow(), 1);
-    let incomeCategories = [];
-    let expenseCategories = [];
-
-    if (lastRowSettings > 1) {
-      const vals = settingsSheet.getRange(2, 1, lastRowSettings - 1, 2).getValues();
-      vals.forEach(row => {
-        const inc = row[0] ? String(row[0]).trim() : "";
-        const exp = row[1] ? String(row[1]).trim() : "";
-        if (inc && !incomeCategories.includes(inc)) incomeCategories.push(inc);
-        if (exp && !expenseCategories.includes(exp)) expenseCategories.push(exp);
-      });
+    if (e && e.parameter) {
+      if (e.parameter.business) targetBusiness = e.parameter.business;
+      if (e.parameter.sheet || e.parameter.sheetName) {
+        targetSheetName = e.parameter.sheet || e.parameter.sheetName;
+      } else {
+        targetSheetName = targetBusiness;
+      }
+      if (e.parameter.spreadsheetId || e.parameter.sheetId) {
+        reqSpreadsheetId = e.parameter.spreadsheetId || e.parameter.sheetId;
+      }
     }
 
-    if (incomeCategories.length === 0) incomeCategories = ["Salary", "Freelance", "Investments", "Bonus", "Gifts", "Other Income"];
-    if (expenseCategories.length === 0) expenseCategories = ["Transportation", "Health & Wellness", "Housing & Utilities", "Food & Dining", "Groceries", "Coffee & Drinks", "Shopping", "Entertainment", "Healthcare", "Education", "Other Expense"];
-
-    // Read Data Records
-    const dataSheet = ss.getSheetByName(SHEET_DATA_NAME);
-    const lastRowData = dataSheet.getLastRow();
+    const ss = getTargetSpreadsheet(reqSpreadsheetId, targetBusiness);
+    const sheet = ss.getSheetByName(targetSheetName) || ensureSheetExists(ss, targetSheetName);
+    const lastRow = sheet.getLastRow();
     const records = [];
 
-    if (lastRowData > 1) {
-      const vals = dataSheet.getRange(2, 1, lastRowData - 1, 6).getValues();
+    if (lastRow > 1) {
+      const vals = sheet.getRange(2, 1, lastRow - 1, 6).getValues();
       for (let i = 0; i < vals.length; i++) {
         const row = vals[i];
         if (!row[1] && !row[2] && !row[4]) continue;
@@ -928,12 +1224,35 @@ function doGet(e) {
       }
     }
 
+    // Backward compatibility: If cafe sheet is empty, check legacy "Data" sheet
+    if (records.length === 0 && (targetSheetName === BUSINESS_CAFE || targetSheetName === "Data")) {
+      const oldSheet = ss.getSheetByName("Data");
+      if (oldSheet && oldSheet.getLastRow() > 1) {
+        const oldVals = oldSheet.getRange(2, 1, oldSheet.getLastRow() - 1, 6).getValues();
+        for (let i = 0; i < oldVals.length; i++) {
+          const row = oldVals[i];
+          if (!row[1] && !row[2] && !row[4]) continue;
+          records.push({
+            id: i + 1,
+            timestamp: row[0] instanceof Date ? Utilities.formatDate(row[0], TIMEZONE, "yyyy-MM-dd HH:mm:ss") : String(row[0] || ""),
+            date: row[1] instanceof Date ? Utilities.formatDate(row[1], TIMEZONE, "yyyy-MM-dd") : String(row[1] || ""),
+            type: String(row[2] || "Expense").trim(),
+            category: String(row[3] || "Other").trim(),
+            amount: parseFloat(row[4]) || 0,
+            note: String(row[5] || "")
+          });
+        }
+      }
+    }
+
     return ContentService.createTextOutput(JSON.stringify({
       status: "success",
-      sheetId: SPREADSHEET_ID,
-      categories: { income: incomeCategories, expense: expenseCategories },
+      business: targetBusiness,
+      sheet: targetSheetName,
+      spreadsheetId: ss.getId(),
       records: records,
-      totalRecords: records.length
+      totalRecords: records.length,
+      timestamp: new Date().toISOString()
     })).setMimeType(ContentService.MimeType.JSON);
   } catch (err) {
     return ContentService.createTextOutput(JSON.stringify({
@@ -945,9 +1264,6 @@ function doGet(e) {
 
 function doPost(e) {
   try {
-    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-    ensureSheetsInitialized(ss);
-
     let data = {};
     if (e && e.postData && e.postData.contents) {
       try { data = JSON.parse(e.postData.contents); } catch (ex) { data = e.parameter || {}; }
@@ -955,23 +1271,29 @@ function doPost(e) {
       data = e.parameter;
     }
 
+    const business = data.business || data.sheet || BUSINESS_CAFE;
+    const targetSheetName = data.sheetName || data.sheet || business;
+    const reqSpreadsheetId = data.spreadsheetId || data.sheetId || "";
+
+    // Open target Google Spreadsheet (can be separate file for each business!)
+    const ss = getTargetSpreadsheet(reqSpreadsheetId, business);
+    const targetSheet = ensureSheetExists(ss, targetSheetName);
+
     const now = new Date();
     const date = data.date || Utilities.formatDate(now, TIMEZONE, "yyyy-MM-dd");
     const type = (data.type && String(data.type).toLowerCase() === "income") ? "Income" : "Expense";
     const category = String(data.category || (type === "Income" ? "Other Income" : "Other Expense")).trim();
     const amount = parseFloat(data.amount);
-    const note = String(data.note || "").trim(); // Pure note without any "$" sign
+    const note = String(data.note || "").trim();
 
     if (isNaN(amount) || amount <= 0) {
       return ContentService.createTextOutput(JSON.stringify({ status: "error", message: "Invalid amount." }))
         .setMimeType(ContentService.MimeType.JSON);
     }
 
-    const dataSheet = ss.getSheetByName(SHEET_DATA_NAME);
     const formattedTimestamp = data.timestamp || Utilities.formatDate(now, TIMEZONE, "yyyy-MM-dd HH:mm:ss");
 
-    // Columns: Timestamp, Date, Type, Category, Amount, Note
-    dataSheet.appendRow([
+    targetSheet.appendRow([
       formattedTimestamp,
       date,
       type,
@@ -982,7 +1304,10 @@ function doPost(e) {
 
     return ContentService.createTextOutput(JSON.stringify({
       status: "success",
-      message: "Row appended successfully in Daun Penh (GMT+7) time",
+      business: business,
+      sheet: targetSheetName,
+      spreadsheetId: ss.getId(),
+      message: "Row appended successfully to spreadsheet [" + ss.getName() + "], sheet [" + targetSheetName + "]",
       record: { timestamp: formattedTimestamp, date: date, type: type, category: category, amount: amount, note: note }
     })).setMimeType(ContentService.MimeType.JSON);
   } catch (err) {
@@ -991,25 +1316,116 @@ function doPost(e) {
   }
 }
 
-function ensureSheetsInitialized(ss) {
-  let dataSheet = ss.getSheetByName(SHEET_DATA_NAME);
-  if (!dataSheet) dataSheet = ss.insertSheet(SHEET_DATA_NAME);
-  if (dataSheet.getLastRow() === 0) {
-    dataSheet.appendRow(["Timestamp", "Date", "Type", "Category", "Amount", "Note"]);
-    dataSheet.getRange(1, 1, 1, 6).setFontWeight("bold").setBackground("#F3F4F6");
+function ensureSheetExists(ss, sheetName) {
+  let sheet = ss.getSheetByName(sheetName);
+  if (!sheet) {
+    sheet = ss.insertSheet(sheetName);
   }
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(["Timestamp", "Date", "Type", "Category", "Amount", "Note"]);
+    sheet.getRange(1, 1, 1, 6).setFontWeight("bold").setBackground("#F3F4F6");
+  }
+  return sheet;
+}`;
 
-  let settingsSheet = ss.getSheetByName(SHEET_SETTINGS_NAME);
-  if (!settingsSheet) settingsSheet = ss.insertSheet(SHEET_SETTINGS_NAME);
-  if (settingsSheet.getLastRow() === 0) {
-    settingsSheet.appendRow(["Income Categories", "Expences Categories"]);
-    settingsSheet.getRange(1, 1, 1, 2).setFontWeight("bold").setBackground("#F3F4F6");
-    const dInc = ["Salary", "Freelance", "Investments", "Bonus", "Gifts", "Other Income"];
-    const dExp = ["Transportation", "Health & Wellness", "Housing & Utilities", "Food & Dining", "Groceries", "Coffee & Drinks", "Shopping", "Entertainment", "Healthcare", "Education", "Other Expense"];
-    const max = Math.max(dInc.length, dExp.length);
-    for (let i = 0; i < max; i++) {
-      settingsSheet.appendRow([dInc[i] || "", dExp[i] || ""]);
+  // Dedicated single-sheet script for Pou Ok Internet (Sheet 2)
+  const appsScriptCodeDedicated = `/**
+ * Google Apps Script for Pou Ok Internet (ពូអុក Internet)
+ * Attach this directly to your new Google Sheet: Extensions > Apps Script
+ */
+const TIMEZONE_PHNOM_PENH = "Asia/Phnom_Penh";
+
+function doGet(e) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getActiveSheet();
+    const lastRow = sheet.getLastRow();
+    const records = [];
+
+    if (lastRow > 1) {
+      const vals = sheet.getRange(2, 1, lastRow - 1, 6).getValues();
+      for (let i = 0; i < vals.length; i++) {
+        const row = vals[i];
+        if (!row[1] && !row[2] && !row[4]) continue;
+
+        let formattedTimestamp = row[0] instanceof Date 
+          ? Utilities.formatDate(row[0], TIMEZONE_PHNOM_PENH, "yyyy-MM-dd HH:mm:ss") 
+          : String(row[0] || "");
+        let formattedDate = row[1] instanceof Date 
+          ? Utilities.formatDate(row[1], TIMEZONE_PHNOM_PENH, "yyyy-MM-dd") 
+          : String(row[1] || "");
+
+        records.push({
+          id: i + 1,
+          timestamp: formattedTimestamp,
+          date: formattedDate,
+          type: String(row[2] || "Expense").trim(),
+          category: String(row[3] || "Other").trim(),
+          amount: parseFloat(row[4]) || 0,
+          note: String(row[5] || "")
+        });
+      }
     }
+
+    return ContentService.createTextOutput(JSON.stringify({
+      status: "success",
+      business: "ពូអុក Internet",
+      spreadsheetId: ss.getId(),
+      records: records,
+      totalRecords: records.length,
+      timestamp: new Date().toISOString()
+    })).setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({
+      status: "error",
+      message: err.toString()
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function doPost(e) {
+  try {
+    let data = {};
+    if (e && e.postData && e.postData.contents) {
+      try { data = JSON.parse(e.postData.contents); } catch (ex) { data = e.parameter || {}; }
+    } else if (e && e.parameter) {
+      data = e.parameter;
+    }
+
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = ss.getActiveSheet();
+
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow(["Timestamp", "Date", "Type", "Category", "Amount", "Note"]);
+      sheet.getRange(1, 1, 1, 6).setFontWeight("bold").setBackground("#F3F4F6");
+    }
+
+    const now = new Date();
+    const date = data.date || Utilities.formatDate(now, TIMEZONE_PHNOM_PENH, "yyyy-MM-dd");
+    const formattedTimestamp = data.timestamp || Utilities.formatDate(now, TIMEZONE_PHNOM_PENH, "yyyy-MM-dd HH:mm:ss");
+    const type = (data.type && String(data.type).toLowerCase() === "income") ? "Income" : "Expense";
+    const category = String(data.category || (type === "Income" ? "Other Income" : "Other Expense")).trim();
+    const amount = parseFloat(data.amount);
+    const note = String(data.note || "").trim();
+
+    if (isNaN(amount) || amount <= 0) {
+      return ContentService.createTextOutput(JSON.stringify({ status: "error", message: "Invalid amount." }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    sheet.appendRow([formattedTimestamp, date, type, category, amount, note]);
+
+    return ContentService.createTextOutput(JSON.stringify({
+      status: "success",
+      business: "ពូអុក Internet",
+      spreadsheetId: ss.getId(),
+      sheet: sheet.getName(),
+      message: "Saved successfully to " + ss.getName() + "!",
+      record: { timestamp: formattedTimestamp, date: date, type: type, category: category, amount: amount, note: note }
+    })).setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
   }
 }`;
 
@@ -1059,8 +1475,18 @@ function ensureSheetsInitialized(ss) {
                   Google Sheet Synced
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400 dark:text-slate-500 hidden sm:block">
-                Sheet ID: <code className="font-mono text-slate-600 dark:text-slate-400 font-semibold">{GOOGLE_SHEET_ID}</code>
+              <p className="text-[11px] text-slate-400 dark:text-slate-500 hidden sm:flex items-center gap-1.5">
+                <span>{activeBusiness} Sheet:</span>
+                <a
+                  href={`https://docs.google.com/spreadsheets/d/${activeSheetId}/edit`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-mono text-emerald-600 dark:text-emerald-400 font-semibold hover:underline flex items-center gap-1"
+                  title="Open this Google Sheet in a new tab"
+                >
+                  <span>{activeSheetId ? (activeSheetId.length > 20 ? activeSheetId.slice(0, 10) + '...' + activeSheetId.slice(-6) : activeSheetId) : 'Not configured'}</span>
+                  <ExternalLink className="w-3 h-3 inline" />
+                </a>
               </p>
             </div>
           </div>
@@ -1099,9 +1525,15 @@ function ensureSheetsInitialized(ss) {
 
             {/* Apps Script Settings */}
             <button
-              onClick={() => setIsScriptModalOpen(true)}
+              onClick={() => {
+                setInputSheetIdCafe(sheetIdCafe);
+                setInputSheetIdInternet(sheetIdInternet);
+                setInputUrlCafe(scriptUrlCafe);
+                setInputUrlInternet(scriptUrlInternet);
+                setIsScriptModalOpen(true);
+              }}
               className="p-2 text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-xl transition-colors cursor-pointer"
-              title="Settings & Code"
+              title="Settings & Sheet Connections"
             >
               <Code2 className="w-4 h-4" />
             </button>
@@ -1109,16 +1541,126 @@ function ensureSheetsInitialized(ss) {
         </div>
       </header>
 
+      {/* BUSINESS SWITCHER BUTTON BAR (កាហ្វេចុងភូមិ <-> ពូអុក Internet) */}
+      <section className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200/90 dark:border-slate-800 sticky top-16 z-20 transition-colors shadow-xs">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+              <Store className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span>ជ្រើសរើសសាខា · Switch Branch:</span>
+            </span>
+            <span className="text-[11px] font-mono px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 flex items-center gap-1.5">
+              <span>Sheet: {activeBusiness}</span>
+              {activeSheetId ? (
+                <a
+                  href={`https://docs.google.com/spreadsheets/d/${activeSheetId}/edit`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 inline-flex items-center"
+                  title="Open this Google Spreadsheet"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              ) : (
+                <span className="text-amber-500 font-sans text-[10px] font-semibold">(Not connected)</span>
+              )}
+            </span>
+          </div>
+
+          {/* TWO SWITCH BUTTONS: កាហ្វេចុងភូមិ vs ពូអុក Internet */}
+          <div className="inline-flex p-1 bg-slate-100 dark:bg-slate-800/90 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-inner w-full sm:w-auto">
+            {/* Button 1: កាហ្វេចុងភូមិ */}
+            <button
+              type="button"
+              onClick={() => handleSwitchBusiness('កាហ្វេចុងភូមិ')}
+              className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer ${
+                activeBusiness === 'កាហ្វេចុងភូមិ'
+                  ? 'bg-amber-700 text-white shadow-md ring-2 ring-amber-600/30'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-700/50'
+              }`}
+            >
+              <Coffee className="w-4 h-4 text-amber-300" />
+              <span className="font-moul tracking-normal pt-0.5">កាហ្វេចុងភូមិ</span>
+            </button>
+
+            {/* Button 2: ពូអុក Internet */}
+            <button
+              type="button"
+              onClick={() => handleSwitchBusiness('ពូអុក Internet')}
+              className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer ${
+                activeBusiness === 'ពូអុក Internet'
+                  ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-500/30'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-700/50'
+              }`}
+            >
+              <Wifi className="w-4 h-4 text-blue-200" />
+              <span className="font-moul tracking-normal pt-0.5">ពូអុក Internet</span>
+            </button>
+          </div>
+
+        </div>
+      </section>
+
       {/* MAIN CONTAINER */}
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 flex-1 w-full space-y-6">
+
+        {/* WARNING / NOTICE BANNER WHEN POU OK INTERNET IS NOT CONNECTED */}
+        {!isInternetConfigured && activeBusiness === 'ពូអុក Internet' && (
+          <div className="bg-amber-50 dark:bg-amber-950/40 border-2 border-amber-300 dark:border-amber-800/80 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs text-amber-950 dark:text-amber-200 shadow-sm animate-in fade-in duration-300">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0 mt-0.5">
+                <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="font-bold text-sm sm:text-base text-slate-900 dark:text-white flex items-center gap-2">
+                  <span>ពូអុក Internet មិនទាន់ភ្ជាប់ Google Sheet ដាច់ដោយឡែកនៅឡើយទេ</span>
+                </h4>
+                <p className="text-amber-900 dark:text-amber-200/90 leading-relaxed">
+                  ទិន្នន័យពីមុនបានចូលក្នុង Google Sheet ចាស់ (កាហ្វេចុងភូមិ) ដោយសារមិនទាន់បានភ្ជាប់ Web App URL សម្រាប់ Google Sheet ថ្មី។ ដើម្បីឱ្យទិន្នន័យ ពូអុក Internet ចូលទៅក្នុង Google Sheet ថ្មីដោយឡែក សូមចុចប៊ូតុងខាងស្តាំដើម្បីភ្ជាប់។
+                </p>
+                <div className="flex items-center gap-2 pt-0.5 text-[11px] font-medium text-amber-800 dark:text-amber-300">
+                  <span>• ទិន្នន័យថ្មីដែលបញ្ចូលពេលនេះ នឹងរក្សាទុកក្នុងម៉ាស៊ីន (Offline) សិន រហូតដល់អ្នកភ្ជាប់ Sheet ថ្មី។</span>
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setSettingsTab('sheets');
+                setIsScriptModalOpen(true);
+              }}
+              className="px-5 py-3 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 shrink-0 cursor-pointer shadow-sm transition-colors whitespace-nowrap"
+            >
+              <Link2 className="w-4 h-4" />
+              <span>ភ្ជាប់ Google Sheet ថ្មី (Connect Sheet) ↗</span>
+            </button>
+          </div>
+        )}
 
         {/* 1. TOP NET BALANCE HERO CARD */}
         <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200/90 dark:border-slate-800 shadow-sm transition-colors duration-200">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
             <div>
-              <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">
-                NET BALANCE · សមតុល្យសរុប
-              </span>
+              <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                  NET BALANCE · សមតុល្យសរុប
+                </span>
+                <span
+                  className={`text-[11px] font-bold px-2.5 py-0.5 rounded-lg border flex items-center gap-1.5 ${
+                    activeBusiness === 'កាហ្វេចុងភូមិ'
+                      ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800/60'
+                      : 'bg-blue-50 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-800/60'
+                  }`}
+                >
+                  {activeBusiness === 'កាហ្វេចុងភូមិ' ? (
+                    <Coffee className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                  ) : (
+                    <Wifi className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                  )}
+                  <span className="font-moul text-[11px] pt-0.5">{activeBusiness}</span>
+                </span>
+              </div>
               <div
                 className={`text-4xl sm:text-5xl font-extrabold tracking-tight ${
                   metrics.net >= 0 ? 'text-slate-900 dark:text-white' : 'text-rose-600 dark:text-rose-400'
@@ -1127,11 +1669,11 @@ function ensureSheetsInitialized(ss) {
                 {metrics.net < 0 ? '-' : ''}
                 {formatMoney(Math.abs(metrics.net))}
               </div>
-              <p className="text-xs text-slate-400 dark:text-slate-500 mt-1.5 flex items-center gap-1.5">
+              <p className="text-xs text-slate-400 dark:text-slate-500 mt-1.5 flex items-center gap-1.5 flex-wrap">
                 <span>
                   {isLoading && transactions.length === 0
-                    ? 'Syncing transactions from your Google Sheet...'
-                    : `Based on ${metrics.totalCount} transactions in your Google Sheet`}
+                    ? `Syncing ${activeBusiness} from Google Sheet...`
+                    : `Based on ${metrics.totalCount} transactions in Google Sheet tab "${activeBusiness}"`}
                 </span>
                 <span className="text-slate-300 dark:text-slate-700">•</span>
                 <span className="text-emerald-700 dark:text-emerald-400 font-mono font-medium">Daun Penh {liveDaunPenh.time12}</span>
@@ -1181,8 +1723,13 @@ function ensureSheetsInitialized(ss) {
           <div className="lg:col-span-5 bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200/90 dark:border-slate-800 shadow-sm transition-colors duration-200">
             <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100 dark:border-slate-800">
               <div>
-                <h2 className="font-bold text-base text-slate-900 dark:text-white">Add Transaction</h2>
-                <p className="text-xs text-slate-400">បញ្ចូលចំណូល ឬ ចំណាយ</p>
+                <h2 className="font-bold text-base text-slate-900 dark:text-white flex items-center gap-2">
+                  <span>Add Transaction</span>
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-moul">
+                    {activeBusiness}
+                  </span>
+                </h2>
+                <p className="text-xs text-slate-400">បញ្ចូលចំណូល ឬ ចំណាយសម្រាប់ {activeBusiness}</p>
               </div>
               <span className="text-xs font-mono font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">
                 $ USD
@@ -1312,6 +1859,130 @@ function ensureSheetsInitialized(ss) {
                 />
               </div>
 
+              {/* Destination Google Sheet & Tab Selector */}
+              <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+                    <FileText className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                    <span>Store in Sheet · ទីតាំងរក្សាទុកទិន្នន័យ:</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSettingsTab('sheets');
+                      setIsScriptModalOpen(true);
+                    }}
+                    className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold hover:underline cursor-pointer"
+                  >
+                    Manage Sheets ↗
+                  </button>
+                </div>
+
+                {/* 3 Quick Destination Buttons */}
+                <div className="grid grid-cols-3 gap-1.5 p-1 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-700/80 text-[11px]">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTargetDestination('កាហ្វេចុងភូមិ');
+                      setDestinationMode('business');
+                    }}
+                    className={`py-1.5 px-2 rounded-lg font-bold flex items-center justify-center gap-1 transition-all cursor-pointer truncate ${
+                      destinationMode === 'business' && targetDestination === 'កាហ្វេចុងភូមិ'
+                        ? 'bg-amber-700 text-white shadow-xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                    title="Store into កាហ្វេចុងភូមិ Google Sheet"
+                  >
+                    <Coffee className="w-3 h-3 text-amber-300" />
+                    <span className="font-moul text-[10px] truncate">កាហ្វេចុងភូមិ</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTargetDestination('ពូអុក Internet');
+                      setDestinationMode('business');
+                    }}
+                    className={`py-1.5 px-2 rounded-lg font-bold flex items-center justify-center gap-1 transition-all cursor-pointer truncate ${
+                      destinationMode === 'business' && targetDestination === 'ពូអុក Internet'
+                        ? 'bg-blue-600 text-white shadow-xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                    title="Store into ពូអុក Internet Google Sheet"
+                  >
+                    <Wifi className="w-3 h-3 text-blue-200" />
+                    <span className="font-moul text-[10px] truncate">ពូអុក Internet</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setDestinationMode('custom')}
+                    className={`py-1.5 px-2 rounded-lg font-bold flex items-center justify-center gap-1 transition-all cursor-pointer truncate ${
+                      destinationMode === 'custom'
+                        ? 'bg-emerald-600 text-white shadow-xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                    title="Store into another custom sheet tab or document"
+                  >
+                    <Plus className="w-3 h-3" />
+                    <span className="truncate">Other Sheet</span>
+                  </button>
+                </div>
+
+                {/* Custom Sheet Inputs if Other Sheet is chosen */}
+                {destinationMode === 'custom' && (
+                  <div className="space-y-2 pt-1 border-t border-slate-200/60 dark:border-slate-700/60 animate-in fade-in duration-200">
+                    <div>
+                      <label className="block text-[11px] text-slate-500 dark:text-slate-400 mb-1">
+                        Custom Sheet Tab Name (created automatically if missing):
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Special Orders, Delivery, General..."
+                        value={customDestinationSheet}
+                        onChange={(e) => setCustomDestinationSheet(e.target.value)}
+                        className="w-full px-3 py-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-100"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] text-slate-500 dark:text-slate-400 mb-1">
+                        Optional: Custom Spreadsheet ID or Link (leave blank for current):
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Paste another Google Sheet URL or ID..."
+                        value={customDestinationSpreadsheetId}
+                        onChange={(e) => setCustomDestinationSpreadsheetId(e.target.value)}
+                        className="w-full px-3 py-1.5 text-xs font-mono bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-100"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Target Status Indicator */}
+                <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between pt-0.5">
+                  <span className="flex items-center gap-1 truncate">
+                    <span>Target Tab:</span>
+                    <strong className="text-slate-800 dark:text-slate-200 font-semibold font-mono">
+                      {destinationMode === 'custom' ? (customDestinationSheet.trim() || 'Custom') : targetDestination}
+                    </strong>
+                  </span>
+                  <a
+                    href={`https://docs.google.com/spreadsheets/d/${
+                      destinationMode === 'custom' && customDestinationSpreadsheetId.trim()
+                        ? extractSpreadsheetId(customDestinationSpreadsheetId.trim())
+                        : (targetDestination === 'កាហ្វេចុងភូមិ' ? sheetIdCafe : (sheetIdInternet || sheetIdCafe))
+                    }/edit`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 shrink-0 ml-2"
+                  >
+                    <span>Open Sheet</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+              </div>
+
               {/* Save Button */}
               <button
                 type="submit"
@@ -1321,12 +1992,12 @@ function ensureSheetsInitialized(ss) {
                 {isSubmitting ? (
                   <>
                     <RefreshCw className="w-4 h-4 animate-spin text-emerald-400" />
-                    <span>Saving to Google Sheet...</span>
+                    <span>Saving to Google Sheet [{destinationMode === 'custom' ? (customDestinationSheet.trim() || 'Custom Sheet') : targetDestination}]...</span>
                   </>
                 ) : (
                   <>
                     <Plus className="w-4 h-4 text-white stroke-[2.5]" />
-                    <span>Save {txType === 'Income' ? 'Income' : 'Expense'} Entry</span>
+                    <span>Save {txType === 'Income' ? 'Income' : 'Expense'} Entry ({destinationMode === 'custom' ? (customDestinationSheet.trim() || 'Custom Sheet') : targetDestination})</span>
                   </>
                 )}
               </button>
@@ -1340,7 +2011,7 @@ function ensureSheetsInitialized(ss) {
             <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200/90 dark:border-slate-800 shadow-sm transition-colors duration-200">
               <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100 dark:border-slate-800">
                 <h3 className="font-bold text-sm text-slate-900 dark:text-white">Cash Flow Ratio</h3>
-                <span className="text-xs text-slate-400">ចំណូល vs ចំណាយ</span>
+                <span className="text-xs text-slate-400">ចំណូល vs ចំណាយ ({activeBusiness})</span>
               </div>
 
               <div className="space-y-4">
@@ -1380,12 +2051,12 @@ function ensureSheetsInitialized(ss) {
                 <h3 className="font-bold text-sm text-slate-900 dark:text-white">
                   Top Expense Categories · ការចំណាយតាមប្រភេទ
                 </h3>
-                <span className="text-xs text-slate-400">Ranked</span>
+                <span className="text-xs text-slate-400">Ranked ({activeBusiness})</span>
               </div>
 
               <div className="space-y-4">
                 {categoryStats.length === 0 ? (
-                  <div className="py-6 text-center text-slate-400 text-xs">No expenses recorded yet.</div>
+                  <div className="py-6 text-center text-slate-400 text-xs">No expenses recorded yet for {activeBusiness}.</div>
                 ) : (
                   categoryStats.slice(0, 5).map((cat) => {
                     const pct = metrics.expense > 0 ? Math.round((cat.total / metrics.expense) * 100) : 0;
@@ -1419,11 +2090,14 @@ function ensureSheetsInitialized(ss) {
         <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200/90 dark:border-slate-800 shadow-sm transition-colors duration-200">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 mb-4 border-b border-slate-100 dark:border-slate-800">
             <div>
-              <h2 className="font-bold text-base text-slate-900 dark:text-white">
-                Transaction History · ប្រវត្តិប្រតិបត្តិការ
+              <h2 className="font-bold text-base text-slate-900 dark:text-white flex items-center gap-2">
+                <span>Transaction History · ប្រវត្តិប្រតិបត្តិការ</span>
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-moul">
+                  {activeBusiness}
+                </span>
               </h2>
               <p className="text-xs text-slate-400">
-                Synced directly with Google Sheet "Data" tab
+                Synced directly with Google Sheet tab "{activeBusiness}"
               </p>
             </div>
 
@@ -1562,12 +2236,15 @@ function ensureSheetsInitialized(ss) {
                 <Calculator className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h2 className="font-bold text-base text-slate-900 dark:text-white flex items-center gap-2">
+                <h2 className="font-bold text-base text-slate-900 dark:text-white flex items-center gap-2 flex-wrap">
                   <span>Calculate by Selected Date</span>
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-moul">
+                    {activeBusiness}
+                  </span>
                   <span className="text-xs font-normal text-slate-400">· គណនាតាមកាលបរិច្ឆេទ</span>
                 </h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Select your date range and type to view calculated income, expenses, and net balance
+                  Select your date range and type to view calculated income, expenses, and net balance for {activeBusiness}
                 </p>
               </div>
             </div>
@@ -2061,18 +2738,20 @@ function ensureSheetsInitialized(ss) {
 
       </main>
 
-      {/* MODAL: APPS SCRIPT CODE & SETTINGS */}
+      {/* MODAL: APPS SCRIPT CODE & MULTI-SHEET SETTINGS */}
       {isScriptModalOpen && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in-95 transition-colors">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-2xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in-95 transition-colors">
+            
+            {/* Modal Header */}
             <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/50">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-slate-900 dark:bg-slate-800 text-white flex items-center justify-center border border-slate-700">
-                  <Code2 className="w-4 h-4 text-emerald-400" />
+                <div className="w-10 h-10 rounded-xl bg-slate-900 dark:bg-slate-800 text-white flex items-center justify-center border border-slate-700">
+                  <Code2 className="w-5 h-5 text-emerald-400" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-base text-slate-900 dark:text-white">Google Apps Script & Web App URL</h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Configured with Daun Penh (GMT+7) timezone</p>
+                  <h3 className="font-bold text-base text-slate-900 dark:text-white">Google Sheet Connections & Apps Script</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Manage separate Google Spreadsheets for each business</p>
                 </div>
               </div>
               <button
@@ -2083,79 +2762,339 @@ function ensureSheetsInitialized(ss) {
               </button>
             </div>
 
+            {/* Modal Tabs */}
+            <div className="flex border-b border-slate-200 dark:border-slate-800 px-6 pt-3 bg-slate-50/30 dark:bg-slate-800/30 gap-2">
+              <button
+                type="button"
+                onClick={() => setSettingsTab('sheets')}
+                className={`pb-3 px-3 text-xs font-bold border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
+                  settingsTab === 'sheets'
+                    ? 'border-emerald-600 text-emerald-600 dark:text-emerald-400'
+                    : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white'
+                }`}
+              >
+                <FileText className="w-4 h-4" />
+                <span>Separate Google Sheets (២ សាខា)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setSettingsTab('code')}
+                className={`pb-3 px-3 text-xs font-bold border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
+                  settingsTab === 'code'
+                    ? 'border-emerald-600 text-emerald-600 dark:text-emerald-400'
+                    : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white'
+                }`}
+              >
+                <Code2 className="w-4 h-4" />
+                <span>Google Apps Script (Code.gs)</span>
+              </button>
+            </div>
+
+            {/* Modal Body */}
             <div className="p-6 overflow-y-auto space-y-6 text-xs text-slate-600 dark:text-slate-300">
-              <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
-                <h4 className="font-bold text-slate-800 dark:text-white text-sm mb-2">Web App URL</h4>
-                <p className="text-slate-500 dark:text-slate-400 mb-3 text-xs">
-                  Paste the deployment URL from Google Apps Script below:
-                </p>
-                <form onSubmit={handleSaveUrl} className="space-y-3">
-                  <input
-                    type="url"
-                    required
-                    placeholder="https://script.google.com/macros/s/.../exec"
-                    value={inputUrl}
-                    onChange={(e) => setInputUrl(e.target.value)}
-                    className="w-full px-3.5 py-2.5 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-emerald-500 font-mono text-slate-800 dark:text-slate-100"
-                  />
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] text-slate-400">
-                      Must end with <code className="font-bold text-slate-600 dark:text-slate-300">/exec</code>
-                    </span>
+              {settingsTab === 'sheets' ? (
+                <form onSubmit={handleSaveSettings} className="space-y-6">
+                  {/* Info Notice */}
+                  <div className="p-4 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 rounded-2xl flex items-start gap-3 text-xs text-emerald-900 dark:text-emerald-200">
+                    <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="block font-semibold text-sm mb-0.5">ការកំណត់ទីតាំង Google Sheet ដាច់ដោយឡែក (Separate Sheets):</strong>
+                      <span className="leading-relaxed">
+                        កម្មវិធីនេះគាំទ្រការរក្សាទុកទិន្នន័យទៅក្នុង <strong>Google Sheet ពីរផ្សេងគ្នាទាំងស្រុង</strong>។ បង្កើត Google Sheet ថ្មីមួយសម្រាប់ &quot;ពូអុក Internet&quot; ដាក់កូដ Apps Script និងចម្លង Web App URL មកដាក់ក្នុងប្រអប់ខាងក្រោម។
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Sheet 1: កាហ្វេចុងភូមិ */}
+                  <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-amber-200/80 dark:border-amber-900/50 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Coffee className="w-4 h-4 text-amber-600" />
+                        <h4 className="font-bold text-slate-800 dark:text-white text-sm">
+                          Sheet 1: កាហ្វេចុងភូមិ (Coffee Shop)
+                        </h4>
+                      </div>
+                      <a
+                        href={`https://docs.google.com/spreadsheets/d/${extractSpreadsheetId(inputSheetIdCafe) || DEFAULT_SHEET_ID_CAFE}/edit`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[11px] text-amber-700 dark:text-amber-400 font-semibold hover:underline flex items-center gap-1"
+                      >
+                        <span>Open Sheet ↗</span>
+                      </a>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                        Google Sheet Link or ID:
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Paste Google Sheet URL or ID..."
+                        value={inputSheetIdCafe}
+                        onChange={(e) => setInputSheetIdCafe(e.target.value)}
+                        className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl font-mono text-slate-800 dark:text-slate-100"
+                      />
+                    </div>
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">
+                          Google Apps Script Web App URL:
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => testConnection('cafe')}
+                          disabled={isTestingUrl === 'cafe'}
+                          className="text-[11px] text-amber-700 dark:text-amber-400 font-semibold hover:underline cursor-pointer flex items-center gap-1"
+                        >
+                          {isTestingUrl === 'cafe' ? (
+                            <RefreshCw className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <CheckCircle2 className="w-3 h-3" />
+                          )}
+                          <span>Test Connection</span>
+                        </button>
+                      </div>
+                      <input
+                        type="url"
+                        required
+                        placeholder="https://script.google.com/macros/s/.../exec"
+                        value={inputUrlCafe}
+                        onChange={(e) => setInputUrlCafe(e.target.value)}
+                        className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl font-mono text-slate-800 dark:text-slate-100"
+                      />
+                    </div>
+                    {testResult && testResult.target === 'cafe' && (
+                      <div className={`p-2.5 rounded-xl text-[11px] flex items-center gap-1.5 ${
+                        testResult.success
+                          ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300'
+                          : 'bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300'
+                      }`}>
+                        {testResult.success ? <CheckCircle2 className="w-3.5 h-3.5 shrink-0" /> : <AlertTriangle className="w-3.5 h-3.5 shrink-0" />}
+                        <span>{testResult.message}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Sheet 2: ពូអុក Internet */}
+                  <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border-2 border-blue-200 dark:border-blue-900 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Wifi className="w-4 h-4 text-blue-600" />
+                        <h4 className="font-bold text-slate-800 dark:text-white text-sm">
+                          Sheet 2: ពូអុក Internet (Internet Cafe)
+                        </h4>
+                      </div>
+                      {inputSheetIdInternet.trim() && (
+                        <a
+                          href={`https://docs.google.com/spreadsheets/d/${extractSpreadsheetId(inputSheetIdInternet)}/edit`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[11px] text-blue-600 dark:text-blue-400 font-semibold hover:underline flex items-center gap-1"
+                        >
+                          <span>Open Sheet ↗</span>
+                        </a>
+                      )}
+                    </div>
+
+                    {/* Step-by-Step Setup Guide */}
+                    <div className="p-3 bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 rounded-xl space-y-2">
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <span className="font-bold text-slate-900 dark:text-white text-[11px]">
+                          ជំហានបង្កើត Google Sheet ថ្មី (How to Set Up New Sheet):
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <a
+                            href="https://sheet.new"
+                            target="_blank"
+                            rel="noreferrer"
+                            className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[10px] font-bold flex items-center gap-1 transition-colors"
+                          >
+                            <span>➕ បង្កើត Sheet ថ្មី (sheet.new) ↗</span>
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(appsScriptCodeDedicated);
+                              setHasCopiedDedicatedCode(true);
+                              setTimeout(() => setHasCopiedDedicatedCode(false), 2500);
+                            }}
+                            className="px-2.5 py-1 bg-slate-900 dark:bg-slate-700 hover:bg-slate-800 text-white rounded-lg text-[10px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                          >
+                            {hasCopiedDedicatedCode ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                            <span>{hasCopiedDedicatedCode ? 'បានចម្លងកូដ!' : 'ចម្លងកូដ Apps Script'}</span>
+                          </button>
+                        </div>
+                      </div>
+                      <ol className="list-decimal pl-4 space-y-1 text-[11px] text-slate-700 dark:text-slate-300 leading-normal">
+                        <li>ចុច <strong>បង្កើត Sheet ថ្មី</strong> ខាងលើ រួចដាក់ឈ្មោះថា &quot;ពូអុក Internet Ledger&quot;។</li>
+                        <li>ក្នុង Sheet ថ្មីនោះ ចុច <strong>Extensions &gt; Apps Script</strong>។</li>
+                        <li>លុបកូដចាស់ចោល រួចបិទភ្ជាប់ (Paste) កូដដែលបានចម្លងរួច ចុច <strong>Deploy &gt; New deployment &gt; Web app (Who has access: Anyone)</strong>។</li>
+                        <li>ចម្លង Web app URL យកមកបិទភ្ជាប់ក្នុងប្រអប់ខាងក្រោម រួចចុច Save!</li>
+                      </ol>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">
+                          Google Apps Script Web App URL សម្រាប់ ពូអុក Internet:
+                        </label>
+                        {inputUrlInternet.trim() && (
+                          <button
+                            type="button"
+                            onClick={() => testConnection('internet')}
+                            disabled={isTestingUrl === 'internet'}
+                            className="text-[11px] text-blue-600 dark:text-blue-400 font-semibold hover:underline cursor-pointer flex items-center gap-1"
+                          >
+                            {isTestingUrl === 'internet' ? (
+                              <RefreshCw className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <CheckCircle2 className="w-3 h-3" />
+                            )}
+                            <span>Test Connection</span>
+                          </button>
+                        )}
+                      </div>
+                      <input
+                        type="url"
+                        placeholder="https://script.google.com/macros/s/.../exec"
+                        value={inputUrlInternet}
+                        onChange={(e) => setInputUrlInternet(e.target.value)}
+                        className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl font-mono text-slate-800 dark:text-slate-100"
+                      />
+                    </div>
+
+                    {testResult && testResult.target === 'internet' && (
+                      <div className={`p-2.5 rounded-xl text-[11px] flex items-center gap-1.5 ${
+                        testResult.success
+                          ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300'
+                          : 'bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300'
+                      }`}>
+                        {testResult.success ? <CheckCircle2 className="w-3.5 h-3.5 shrink-0" /> : <AlertTriangle className="w-3.5 h-3.5 shrink-0" />}
+                        <span>{testResult.message}</span>
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                        Optional: Google Sheet Link or ID (សម្រាប់បើកមើល):
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Paste your separate Google Sheet URL or ID for ពូអុក Internet..."
+                        value={inputSheetIdInternet}
+                        onChange={(e) => setInputSheetIdInternet(e.target.value)}
+                        className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl font-mono text-slate-800 dark:text-slate-100"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Submit Button */}
+                  <div className="flex justify-end pt-2">
                     <button
                       type="submit"
-                      className="px-4 py-2 bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer"
+                      className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer"
                     >
-                      Save & Re-sync
+                      Save &amp; Connect Separate Sheets
                     </button>
                   </div>
                 </form>
-              </div>
-
-              <div>
-                <h4 className="font-bold text-slate-900 dark:text-white text-sm mb-2">How to Deploy in 4 Easy Steps:</h4>
-                <ol className="list-decimal pl-5 space-y-2 text-slate-600 dark:text-slate-300 leading-relaxed">
-                  <li>
-                    Open your Google Sheet:{' '}
-                    <a
-                      href={`https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/edit`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-emerald-700 dark:text-emerald-400 font-semibold underline"
+              ) : (
+                <div className="space-y-4">
+                  {/* Code selector tabs */}
+                  <div className="flex items-center gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCodeType('dedicated')}
+                      className={`flex-1 py-2 px-3 rounded-lg font-bold transition-all cursor-pointer ${
+                        selectedCodeType === 'dedicated'
+                          ? 'bg-blue-600 text-white shadow-xs'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                      }`}
                     >
-                      Open Google Sheet ↗
-                    </a>
-                  </li>
-                  <li>Click <strong>Extensions &gt; Apps Script</strong> in the Google Sheet top menu.</li>
-                  <li>Paste the code below, replacing all existing code in <code>Code.gs</code>.</li>
-                  <li>
-                    Click blue <strong>Deploy &gt; New deployment</strong>, select <strong>Web app</strong>, set{' '}
-                    <strong>Who has access: Anyone</strong>, click Deploy, and copy the Web App URL!
-                  </li>
-                </ol>
-              </div>
+                      1. កូដសម្រាប់ Sheet ថ្មី &quot;ពូអុក Internet&quot; (Recommended)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCodeType('master')}
+                      className={`flex-1 py-2 px-3 rounded-lg font-bold transition-all cursor-pointer ${
+                        selectedCodeType === 'master'
+                          ? 'bg-slate-900 text-white dark:bg-slate-700 shadow-xs'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                      }`}
+                    >
+                      2. កូដ Master Multi-Sheet Script (សម្រាប់ Web App មួយ)
+                    </button>
+                  </div>
 
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-bold text-slate-900 dark:text-white">Google Apps Script Code (Code.gs)</span>
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(appsScriptCode);
-                      setHasCopiedCode(true);
-                      setTimeout(() => setHasCopiedCode(false), 2500);
-                    }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl font-bold text-xs text-slate-700 dark:text-slate-200 transition-colors cursor-pointer"
-                  >
-                    {hasCopiedCode ? <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>{hasCopiedCode ? 'Copied!' : 'Copy Code'}</span>
-                  </button>
+                  {selectedCodeType === 'dedicated' ? (
+                    <div className="space-y-3">
+                      <div className="p-3 bg-blue-50 dark:bg-blue-950/40 rounded-xl border border-blue-200 dark:border-blue-800/60">
+                        <h4 className="font-bold text-slate-900 dark:text-white text-xs mb-1">
+                          របៀបប្រើកូដសម្រាប់ Google Sheet ថ្មី (ពូអុក Internet):
+                        </h4>
+                        <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+                          បង្កើត Google Sheet ថ្មីមួយ &gt; Extensions &gt; Apps Script &gt; បិទភ្ជាប់កូដខាងក្រោម &gt; Deploy &gt; New deployment &gt; Web app (Access: Anyone) &gt; ចម្លង URL ដាក់ក្នុង Settings!
+                        </p>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-slate-900 dark:text-white">Google Apps Script Code (Code.gs)</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(appsScriptCodeDedicated);
+                            setHasCopiedDedicatedCode(true);
+                            setTimeout(() => setHasCopiedDedicatedCode(false), 2500);
+                          }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs transition-colors cursor-pointer"
+                        >
+                          {hasCopiedDedicatedCode ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                          <span>{hasCopiedDedicatedCode ? 'Copied!' : 'Copy Dedicated Code'}</span>
+                        </button>
+                      </div>
+
+                      <pre className="bg-slate-900 dark:bg-slate-950 text-slate-100 p-4 rounded-2xl overflow-x-auto text-[11px] font-mono leading-relaxed max-h-64 border border-slate-800">
+                        {appsScriptCodeDedicated}
+                      </pre>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="p-3 bg-amber-50 dark:bg-amber-950/40 rounded-xl border border-amber-200 dark:border-amber-800/60">
+                        <h4 className="font-bold text-slate-900 dark:text-white text-xs mb-1">
+                          ចំណាំសំខាន់ (Critical Note):
+                        </h4>
+                        <p className="text-[11px] text-amber-900 dark:text-amber-200 leading-relaxed">
+                          ប្រសិនបើអ្នកចង់ប្រើ Web App តែមួយគ្រប់គ្រង Sheet ទាំងពីរ អ្នកត្រូវតែចុច <strong>Deploy &gt; Manage deployments &gt; Edit (រូបខ្មៅដៃ) &gt; Version: New version &gt; Deploy</strong>! ប្រសិនបើមិនជ្រើសរើស New version ទេ Google នឹងនៅតែដំណើរការកូដចាស់ដដែល!
+                        </p>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-slate-900 dark:text-white">Master Multi-Sheet Router Code (Code.gs)</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(appsScriptCode);
+                            setHasCopiedCode(true);
+                            setTimeout(() => setHasCopiedCode(false), 2500);
+                          }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl font-bold text-xs text-slate-700 dark:text-slate-200 transition-colors cursor-pointer"
+                        >
+                          {hasCopiedCode ? <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                          <span>{hasCopiedCode ? 'Copied!' : 'Copy Master Code'}</span>
+                        </button>
+                      </div>
+
+                      <pre className="bg-slate-900 dark:bg-slate-950 text-slate-100 p-4 rounded-2xl overflow-x-auto text-[11px] font-mono leading-relaxed max-h-64 border border-slate-800">
+                        {appsScriptCode}
+                      </pre>
+                    </div>
+                  )}
                 </div>
-                <pre className="bg-slate-900 dark:bg-slate-950 text-slate-100 p-4 rounded-2xl overflow-x-auto text-[11px] font-mono leading-relaxed max-h-56 border border-slate-800">
-                  {appsScriptCode}
-                </pre>
-              </div>
+              )}
             </div>
 
+            {/* Modal Footer */}
             <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-end">
               <button
                 onClick={() => setIsScriptModalOpen(false)}

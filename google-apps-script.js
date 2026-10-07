@@ -1,106 +1,82 @@
 /**
  * ==========================================================================
- * Google Apps Script for Personal Income & Expense Tracker
+ * Google Apps Script for Multi-Business Ledger (Separate Google Sheets)
  * ==========================================================================
- * Sheet ID: 1748vpezYkZU7ZflHUHgNvdefcswgm7bpAN-WS8MrumM
+ * 
+ * WHY DATA STILL WENT INTO THE OLD SPREADSHEET:
+ * 1. Google Apps Script Web Apps run the version of code that is DEPLOYED in
+ *    Google Cloud, not the code in this local file.
+ * 2. If you use the existing Web App URL (ending in .../exec), Google executes
+ *    the old script that was hardcoded to the Cafe spreadsheet!
+ * 3. To make "ពូអុក Internet" store into its own spreadsheet, choose EITHER:
  *
- * TABS REQUIRED:
- * 1. "Data" (Columns: Timestamp, Date, Type, Category, Amount, Note)
- * 2. "Settings" (Column A: Income Categories, Column B: Expences Categories)
+ * --------------------------------------------------------------------------
+ * METHOD 1 (RECOMMENDED - 100% SEPARATE & EASIEST):
+ * Create a new Google Sheet for "ពូអុក Internet" with its own dedicated Web App!
+ * --------------------------------------------------------------------------
+ * 1. Open Google Sheets (https://sheet.new) and name it "ពូអុក Internet Ledger".
+ * 2. In that sheet, click Extensions > Apps Script.
+ * 3. Delete everything in Code.gs and paste SCRIPT 1 (below).
+ * 4. Click the blue "Deploy" button > "New deployment".
+ *    - Select type: "Web app" (click the gear icon if needed).
+ *    - Description: "Pou Ok Internet Web App"
+ *    - Execute as: "Me"
+ *    - Who has access: "Anyone"
+ * 5. Click "Deploy", authorize access, and copy the Web App URL (.../exec).
+ * 6. In your Income/Expense app, click Settings (</>) and paste the URL into:
+ *    "ពូអុក Internet Web App URL".
+ * 7. Click "Save & Connect Separate Sheets".
+ * ==> DONE! All data entered under "ពូអុក Internet" will 100% go into your new sheet!
  *
- * HOW TO DEPLOY:
- * 1. Open your Google Sheet: https://docs.google.com/spreadsheets/d/1748vpezYkZU7ZflHUHgNvdefcswgm7bpAN-WS8MrumM/edit
- * 2. Click Extensions > Apps Script in the top menu.
- * 3. Delete any default code in Code.gs and paste this entire code.
- * 4. Click "Deploy" (top right blue button) > "New deployment".
- * 5. Click the gear icon next to "Select type" and select "Web app".
- * 6. Set:
- *    - Description: "Income Expense Tracker API"
- *    - Execute as: "Me (your email)"
- *    - Who has access: "Anyone"  <-- CRITICAL for web app to communicate!
- * 7. Click "Deploy", review permissions, click Advanced > Go to (unsafe), and Allow.
- * 8. Copy the "Web app URL" (ends with /exec) and paste it into your web app!
+ * --------------------------------------------------------------------------
+ * METHOD 2 (UPDATE EXISTING MASTER WEB APP):
+ * --------------------------------------------------------------------------
+ * If you prefer 1 single Web App for both sheets:
+ * 1. Open the original Google Sheet ("កាហ្វេចុងភូមិ") > Extensions > Apps Script.
+ * 2. Replace Code.gs with SCRIPT 2 (below).
+ * 3. Put your second spreadsheet ID into SPREADSHEET_ID_INTERNET.
+ * 4. CRITICAL STEP: Click "Deploy" > "Manage deployments" > click pencil (Edit)
+ *    > change "Version" dropdown to "New version" > click "Deploy"!
+ *    (If you don't select "New version", Google keeps running the old script!)
  * ==========================================================================
  */
 
-const SPREADSHEET_ID = "1748vpezYkZU7ZflHUHgNvdefcswgm7bpAN-WS8MrumM";
-const SHEET_DATA_NAME = "Data";
-const SHEET_SETTINGS_NAME = "Settings";
-const TIMEZONE = "Asia/Phnom_Penh"; // Daun Penh, Phnom Penh, Cambodia (GMT+7)
+/* ==========================================================================
+ * SCRIPT 1: DEDICATED SCRIPT FOR "ពូអុក Internet" (Or Any Standalone Sheet)
+ * Paste this directly into the new sheet's Extensions > Apps Script!
+ * ========================================================================== */
 
-/**
- * Handle HTTP GET Requests
- * Fetches categories from Settings and historical records from Data.
- */
+const TIMEZONE_PHNOM_PENH = "Asia/Phnom_Penh"; // Daun Penh, Phnom Penh, Cambodia (GMT+7)
+
 function doGet(e) {
   try {
-    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-    ensureSheetsInitialized(ss);
-
-    // Support optional GET-based transaction add (fallback)
-    if (e && e.parameter && e.parameter.action === "addRecord") {
-      return handleAddRecord(ss, e.parameter);
-    }
-
-    // 1. Read Categories from Settings tab
-    const settingsSheet = ss.getSheetByName(SHEET_SETTINGS_NAME);
-    const lastRowSettings = Math.max(settingsSheet.getLastRow(), 1);
-    
-    let incomeCategories = [];
-    let expenseCategories = [];
-
-    if (lastRowSettings > 1) {
-      const settingsValues = settingsSheet.getRange(2, 1, lastRowSettings - 1, 2).getValues();
-      settingsValues.forEach(row => {
-        const inc = row[0] ? String(row[0]).trim() : "";
-        const exp = row[1] ? String(row[1]).trim() : "";
-        if (inc && !incomeCategories.includes(inc)) incomeCategories.push(inc);
-        if (exp && !expenseCategories.includes(exp)) expenseCategories.push(exp);
-      });
-    }
-
-    // Default fallbacks if Settings tab is empty
-    if (incomeCategories.length === 0) {
-      incomeCategories = ["Salary", "Freelance", "Investments", "Bonus", "Gifts", "Other Income"];
-    }
-    if (expenseCategories.length === 0) {
-      expenseCategories = ["Food & Dining", "Groceries", "Rent & Housing", "Utilities", "Transportation", "Shopping", "Entertainment", "Healthcare", "Education", "Personal Care", "Other Expense"];
-    }
-
-    // 2. Read Historical Records from Data tab
-    const dataSheet = ss.getSheetByName(SHEET_DATA_NAME);
-    const lastRowData = dataSheet.getLastRow();
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getActiveSheet();
+    const lastRow = sheet.getLastRow();
     const records = [];
 
-    if (lastRowData > 1) {
-      // Range: Row 2 to lastRow, 6 columns (Timestamp, Date, Type, Category, Amount, Note)
-      const dataValues = dataSheet.getRange(2, 1, lastRowData - 1, 6).getValues();
-      for (let i = 0; i < dataValues.length; i++) {
-        const row = dataValues[i];
-        if (!row[1] && !row[2] && !row[4]) continue; // Skip empty rows
+    if (lastRow > 1) {
+      const vals = sheet.getRange(2, 1, lastRow - 1, 6).getValues();
+      for (let i = 0; i < vals.length; i++) {
+        const row = vals[i];
+        if (!row[1] && !row[2] && !row[4]) continue;
 
         let formattedTimestamp = "";
         if (row[0] instanceof Date) {
-          formattedTimestamp = Utilities.formatDate(row[0], TIMEZONE, "yyyy-MM-dd HH:mm:ss");
+          formattedTimestamp = Utilities.formatDate(row[0], TIMEZONE_PHNOM_PENH, "yyyy-MM-dd HH:mm:ss");
         } else {
           formattedTimestamp = String(row[0] || "");
         }
 
         let formattedDate = "";
         if (row[1] instanceof Date) {
-          formattedDate = Utilities.formatDate(row[1], TIMEZONE, "yyyy-MM-dd");
-        } else if (row[1]) {
-          const parsedD = new Date(row[1]);
-          if (!isNaN(parsedD.getTime())) {
-            formattedDate = Utilities.formatDate(parsedD, TIMEZONE, "yyyy-MM-dd");
-          } else {
-            formattedDate = String(row[1] || "").trim();
-          }
+          formattedDate = Utilities.formatDate(row[1], TIMEZONE_PHNOM_PENH, "yyyy-MM-dd");
+        } else {
+          formattedDate = String(row[1] || "");
         }
 
         records.push({
           id: i + 1,
-          rowIndex: i + 2,
           timestamp: formattedTimestamp,
           date: formattedDate,
           type: String(row[2] || "Expense").trim(),
@@ -111,139 +87,73 @@ function doGet(e) {
       }
     }
 
-    const responsePayload = {
+    return ContentService.createTextOutput(JSON.stringify({
       status: "success",
-      sheetId: SPREADSHEET_ID,
-      categories: {
-        income: incomeCategories,
-        expense: expenseCategories
-      },
+      business: "ពូអុក Internet",
+      spreadsheetId: ss.getId(),
       records: records,
       totalRecords: records.length,
       timestamp: new Date().toISOString()
-    };
-
-    return createJsonResponse(responsePayload);
+    })).setMimeType(ContentService.MimeType.JSON);
   } catch (err) {
-    return createJsonResponse({
+    return ContentService.createTextOutput(JSON.stringify({
       status: "error",
-      message: err.toString(),
-      stack: err.stack
-    });
+      message: err.toString()
+    })).setMimeType(ContentService.MimeType.JSON);
   }
 }
 
-/**
- * Handle HTTP POST Requests
- * Receives new form submissions from web app and appends to Data tab.
- */
 function doPost(e) {
   try {
-    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-    ensureSheetsInitialized(ss);
-
     let data = {};
     if (e && e.postData && e.postData.contents) {
-      try {
-        data = JSON.parse(e.postData.contents);
-      } catch (jsonErr) {
-        data = e.parameter || {};
-      }
+      try { data = JSON.parse(e.postData.contents); } catch (ex) { data = e.parameter || {}; }
     } else if (e && e.parameter) {
       data = e.parameter;
     }
 
-    return handleAddRecord(ss, data);
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = ss.getActiveSheet();
+
+    // Auto-create column headers if sheet is empty
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow(["Timestamp", "Date", "Type", "Category", "Amount", "Note"]);
+      sheet.getRange(1, 1, 1, 6).setFontWeight("bold").setBackground("#F3F4F6");
+    }
+
+    const now = new Date();
+    const date = data.date || Utilities.formatDate(now, TIMEZONE_PHNOM_PENH, "yyyy-MM-dd");
+    const formattedTimestamp = data.timestamp || Utilities.formatDate(now, TIMEZONE_PHNOM_PENH, "yyyy-MM-dd HH:mm:ss");
+    const type = (data.type && String(data.type).toLowerCase() === "income") ? "Income" : "Expense";
+    const category = String(data.category || (type === "Income" ? "Other Income" : "Other Expense")).trim();
+    const amount = parseFloat(data.amount);
+    const note = String(data.note || "").trim();
+
+    if (isNaN(amount) || amount <= 0) {
+      return ContentService.createTextOutput(JSON.stringify({ status: "error", message: "Invalid amount." }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // Append entry directly to this sheet
+    sheet.appendRow([
+      formattedTimestamp,
+      date,
+      type,
+      category,
+      amount,
+      note
+    ]);
+
+    return ContentService.createTextOutput(JSON.stringify({
+      status: "success",
+      business: "ពូអុក Internet",
+      spreadsheetId: ss.getId(),
+      sheet: sheet.getName(),
+      message: "Saved successfully to " + ss.getName() + "!",
+      record: { timestamp: formattedTimestamp, date: date, type: type, category: category, amount: amount, note: note }
+    })).setMimeType(ContentService.MimeType.JSON);
   } catch (err) {
-    return createJsonResponse({
-      status: "error",
-      message: err.toString()
-    });
+    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
   }
-}
-
-/**
- * Helper to validate and add a transaction to the Data tab
- */
-function handleAddRecord(ss, data) {
-  const date = data.date || Utilities.formatDate(new Date(), TIMEZONE, "yyyy-MM-dd");
-  const type = (data.type && String(data.type).toLowerCase() === "income") ? "Income" : "Expense";
-  const category = String(data.category || (type === "Income" ? "Other Income" : "Other Expense")).trim();
-  const amount = parseFloat(data.amount);
-  const note = String(data.note || "").trim();
-
-  if (isNaN(amount) || amount <= 0) {
-    return createJsonResponse({
-      status: "error",
-      message: "Invalid amount. Must be a positive number."
-    });
-  }
-
-  const dataSheet = ss.getSheetByName(SHEET_DATA_NAME);
-  const now = new Date();
-  const formattedTimestamp = data.timestamp || Utilities.formatDate(now, TIMEZONE, "yyyy-MM-dd HH:mm:ss");
-
-  // Columns: Timestamp, Date, Type, Category, Amount, Note
-  dataSheet.appendRow([
-    formattedTimestamp,
-    date,
-    type,
-    category,
-    amount,
-    note
-  ]);
-
-  return createJsonResponse({
-    status: "success",
-    message: "Transaction added successfully!",
-    record: {
-      timestamp: formattedTimestamp,
-      date: date,
-      type: type,
-      category: category,
-      amount: amount,
-      note: note
-    }
-  });
-}
-
-/**
- * Helper to ensure Data and Settings sheets exist with proper headers
- */
-function ensureSheetsInitialized(ss) {
-  // Ensure "Data" sheet
-  let dataSheet = ss.getSheetByName(SHEET_DATA_NAME);
-  if (!dataSheet) {
-    dataSheet = ss.insertSheet(SHEET_DATA_NAME);
-  }
-  if (dataSheet.getLastRow() === 0) {
-    dataSheet.appendRow(["Timestamp", "Date", "Type", "Category", "Amount", "Note"]);
-    dataSheet.getRange(1, 1, 1, 6).setFontWeight("bold").setBackground("#F3F4F6");
-  }
-
-  // Ensure "Settings" sheet
-  let settingsSheet = ss.getSheetByName(SHEET_SETTINGS_NAME);
-  if (!settingsSheet) {
-    settingsSheet = ss.insertSheet(SHEET_SETTINGS_NAME);
-  }
-  if (settingsSheet.getLastRow() === 0) {
-    settingsSheet.appendRow(["Income Categories", "Expences Categories"]);
-    settingsSheet.getRange(1, 1, 1, 2).setFontWeight("bold").setBackground("#F3F4F6");
-
-    const defaultIncome = ["Salary", "Freelance", "Investment", "Bonus", "Gift", "Other Income"];
-    const defaultExpense = ["Food & Dining", "Groceries", "Rent & Housing", "Utilities", "Transportation", "Shopping", "Entertainment", "Healthcare", "Education", "Other Expense"];
-    
-    const maxLen = Math.max(defaultIncome.length, defaultExpense.length);
-    for (let i = 0; i < maxLen; i++) {
-      settingsSheet.appendRow([defaultIncome[i] || "", defaultExpense[i] || ""]);
-    }
-  }
-}
-
-/**
- * Creates JSON response output for CORS-friendly web consumption
- */
-function createJsonResponse(data) {
-  return ContentService.createTextOutput(JSON.stringify(data))
-    .setMimeType(ContentService.MimeType.JSON);
 }
