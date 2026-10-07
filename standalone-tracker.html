@@ -455,6 +455,48 @@
       };
     }
 
+    function normalizeDateToYMD(rawDate) {
+      if (!rawDate) return '';
+      if (rawDate instanceof Date) {
+        if (isNaN(rawDate.getTime())) return '';
+        return getDaunPenhNow().dateYMD;
+      }
+      const str = String(rawDate).trim();
+      if (!str) return '';
+      const ymdMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (ymdMatch) return `${ymdMatch[1]}-${ymdMatch[2]}-${ymdMatch[3]}`;
+      const parsed = new Date(str);
+      if (!isNaN(parsed.getTime())) {
+        try {
+          const dtf = new Intl.DateTimeFormat('en-GB', {
+            timeZone: TIMEZONE_DAUN_PENH,
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+          });
+          const parts = dtf.formatToParts(parsed);
+          const p = {};
+          parts.forEach(part => { p[part.type] = part.value; });
+          if (p.year && p.month && p.day) return `${p.year}-${p.month}-${p.day}`;
+        } catch {
+          const yr = parsed.getFullYear();
+          const mo = String(parsed.getMonth() + 1).padStart(2, '0');
+          const da = String(parsed.getDate()).padStart(2, '0');
+          return `${yr}-${mo}-${da}`;
+        }
+      }
+      return str;
+    }
+
+    function normalizeTransactionType(rawType) {
+      if (!rawType) return 'Expense';
+      const str = String(rawType).trim().toLowerCase();
+      if (str === 'income' || str === 'incomes' || str === 'ចំណូល' || str.includes('income') || str.includes('ចំណូល')) {
+        return 'Income';
+      }
+      return 'Expense';
+    }
+
     function formatMoney(num) {
       return `$${num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     }
@@ -705,16 +747,19 @@
       lblRangeTo.textContent = end || 'today';
 
       const inRange = records.filter(r => {
-        const afterStart = !start || r.date >= start;
-        const beforeEnd = !end || r.date <= end;
-        const matchType = currentRangeType === 'All' || r.type === currentRangeType;
+        const txYMD = normalizeDateToYMD(r.date || r.timestamp);
+        const afterStart = !start || (txYMD ? txYMD >= start : true);
+        const beforeEnd = !end || (txYMD ? txYMD <= end : true);
+        const normType = normalizeTransactionType(r.type);
+        const matchType = currentRangeType === 'All' || normType === currentRangeType;
         return afterStart && beforeEnd && matchType;
       });
 
       let inc = 0, exp = 0, countInc = 0, countExp = 0;
       inRange.forEach(r => {
         const val = parseFloat(r.amount) || 0;
-        if (r.type === 'Income') { inc += val; countInc++; }
+        const normType = normalizeTransactionType(r.type);
+        if (normType === 'Income') { inc += val; countInc++; }
         else { exp += val; countExp++; }
       });
 

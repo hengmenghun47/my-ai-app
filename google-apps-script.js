@@ -89,8 +89,13 @@ function doGet(e) {
         let formattedDate = "";
         if (row[1] instanceof Date) {
           formattedDate = Utilities.formatDate(row[1], TIMEZONE, "yyyy-MM-dd");
-        } else {
-          formattedDate = String(row[1] || "");
+        } else if (row[1]) {
+          const parsedD = new Date(row[1]);
+          if (!isNaN(parsedD.getTime())) {
+            formattedDate = Utilities.formatDate(parsedD, TIMEZONE, "yyyy-MM-dd");
+          } else {
+            formattedDate = String(row[1] || "").trim();
+          }
         }
 
         records.push({

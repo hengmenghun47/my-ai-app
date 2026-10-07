@@ -138,6 +138,74 @@ export function getDaunPenhNow(targetDate?: Date): DaunPenhDateTimeInfo {
   return { dateYMD, timeHMS, time12, dayMonthYear, timestampFull };
 }
 
+// Normalizes any raw date string (including Google Sheets Date string "Sun Oct 04 2026...") to "YYYY-MM-DD"
+export function normalizeDateToYMD(rawDate?: string | Date | null): string {
+  if (!rawDate) return '';
+  if (rawDate instanceof Date) {
+    if (isNaN(rawDate.getTime())) return '';
+    return getDaunPenhNow(rawDate).dateYMD;
+  }
+  const str = String(rawDate).trim();
+  if (!str) return '';
+
+  // 1. Direct YYYY-MM-DD match
+  const ymdMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (ymdMatch) {
+    return `${ymdMatch[1]}-${ymdMatch[2]}-${ymdMatch[3]}`;
+  }
+
+  // 2. Parseable Date strings (e.g. "Sun Oct 04 2026 00:00:00 GMT+0700 (Indochina Time)")
+  const parsed = new Date(str);
+  if (!isNaN(parsed.getTime())) {
+    try {
+      const dtf = new Intl.DateTimeFormat('en-GB', {
+        timeZone: TIMEZONE_DAUN_PENH,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      });
+      const parts = dtf.formatToParts(parsed);
+      const partMap: Record<string, string> = {};
+      parts.forEach((p) => {
+        partMap[p.type] = p.value;
+      });
+      if (partMap.year && partMap.month && partMap.day) {
+        return `${partMap.year}-${partMap.month}-${partMap.day}`;
+      }
+    } catch {
+      const yr = parsed.getFullYear();
+      const mo = String(parsed.getMonth() + 1).padStart(2, '0');
+      const da = String(parsed.getDate()).padStart(2, '0');
+      return `${yr}-${mo}-${da}`;
+    }
+  }
+
+  // 3. DD/MM/YYYY or DD-MM-YYYY format
+  const slashMatch = str.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})/);
+  if (slashMatch) {
+    const [, p1, p2, yr] = slashMatch;
+    return `${yr}-${p2.padStart(2, '0')}-${p1.padStart(2, '0')}`;
+  }
+
+  return str;
+}
+
+// Robust type normalization for English & Khmer
+export function normalizeTransactionType(rawType?: string): 'Income' | 'Expense' {
+  if (!rawType) return 'Expense';
+  const str = String(rawType).trim().toLowerCase();
+  if (
+    str === 'income' ||
+    str === 'incomes' ||
+    str === 'ចំណូល' ||
+    str.includes('income') ||
+    str.includes('ចំណូល')
+  ) {
+    return 'Income';
+  }
+  return 'Expense';
+}
+
 // Formats date into Day-Month-Year (e.g. 07-Oct-2026) and time
 function formatToDaunPenhDisplay(dateStr?: string, timestampStr?: string, timeStr?: string): {
   dayMonthYear: string;
@@ -145,49 +213,47 @@ function formatToDaunPenhDisplay(dateStr?: string, timestampStr?: string, timeSt
 } {
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-  if (timestampStr && timestampStr.trim()) {
-    const s = timestampStr.trim().replace(' ', 'T');
-    const match = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:T|\s+)(\d{2}):(\d{2})(?::(\d{2}))?/);
-    if (match) {
-      const [, yr, mo, da, hr, mn, sc] = match;
-      const mName = monthNames[parseInt(mo, 10) - 1] || mo;
+  // Extract actual time
+  let actualTime = '—';
+  if (timeStr && timeStr.trim()) {
+    const tMatch = timeStr.trim().match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+    if (tMatch) {
+      const [, hr, mn, sc] = tMatch;
       const h24 = parseInt(hr, 10);
       const ampm = h24 >= 12 ? 'PM' : 'AM';
       const h12 = String(h24 % 12 || 12).padStart(2, '0');
-      return {
-        dayMonthYear: `${da}-${mName}-${yr}`,
-        actualTime: `${h12}:${mn}:${sc || '00'} ${ampm}`
-      };
+      actualTime = `${h12}:${mn}:${sc || '00'} ${ampm}`;
+    } else {
+      actualTime = timeStr.trim();
+    }
+  } else if (timestampStr && timestampStr.trim()) {
+    const tsMatch = timestampStr.trim().match(/(?:T|\s+)(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+    if (tsMatch) {
+      const [, hr, mn, sc] = tsMatch;
+      const h24 = parseInt(hr, 10);
+      const ampm = h24 >= 12 ? 'PM' : 'AM';
+      const h12 = String(h24 % 12 || 12).padStart(2, '0');
+      actualTime = `${h12}:${mn}:${sc || '00'} ${ampm}`;
     }
   }
 
-  if (dateStr && dateStr.trim()) {
-    const dMatch = dateStr.trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
-    if (dMatch) {
-      const [, yr, mo, da] = dMatch;
+  // Extract dayMonthYear via robust normalizer
+  const ymd = normalizeDateToYMD(dateStr || timestampStr);
+  if (ymd) {
+    const parts = ymd.split('-');
+    if (parts.length === 3) {
+      const [yr, mo, da] = parts;
       const mName = monthNames[parseInt(mo, 10) - 1] || mo;
-      const dayMonthYear = `${da}-${mName}-${yr}`;
-
-      if (timeStr && timeStr.trim()) {
-        const tMatch = timeStr.trim().match(/^(\d{2}):(\d{2})(?::(\d{2}))?/);
-        if (tMatch) {
-          const [, hr, mn, sc] = tMatch;
-          const h24 = parseInt(hr, 10);
-          const ampm = h24 >= 12 ? 'PM' : 'AM';
-          const h12 = String(h24 % 12 || 12).padStart(2, '0');
-          return {
-            dayMonthYear,
-            actualTime: `${h12}:${mn}:${sc || '00'} ${ampm}`
-          };
-        }
-      }
-      return { dayMonthYear, actualTime: timeStr || '' };
+      return {
+        dayMonthYear: `${da}-${mName}-${yr}`,
+        actualTime
+      };
     }
   }
 
   return {
     dayMonthYear: dateStr || '—',
-    actualTime: timeStr || timestampStr || ''
+    actualTime
   };
 }
 
@@ -297,7 +363,22 @@ export default function App() {
           });
         }
         if (Array.isArray(data.records) && data.records.length > 0) {
-          setTransactions(data.records.reverse());
+          const mapped: Transaction[] = data.records.map((r: any, idx: number) => {
+            const parsedYMD = normalizeDateToYMD(r.date || r.timestamp) || getDaunPenhNow().dateYMD;
+            const normType = normalizeTransactionType(r.type);
+            const dtInfo = formatToDaunPenhDisplay(r.date, r.timestamp, r.time);
+            return {
+              id: String(r.id || idx + 1),
+              date: parsedYMD,
+              time: r.time || dtInfo.actualTime,
+              timestamp: r.timestamp || `${parsedYMD} ${r.time || ''}`,
+              type: normType,
+              category: String(r.category || (normType === 'Income' ? 'Other' : 'Other Expense')).trim(),
+              amount: typeof r.amount === 'number' ? r.amount : parseFloat(r.amount) || 0,
+              note: String(r.note || '')
+            };
+          });
+          setTransactions(mapped.reverse());
         }
         setIsDemoMode(false);
         showToast('Google Sheet data synced successfully!', 'success');
@@ -415,7 +496,8 @@ export default function App() {
 
     transactions.forEach((t) => {
       const val = Number(t.amount) || 0;
-      if (t.type === 'Income') {
+      const normType = normalizeTransactionType(t.type);
+      if (normType === 'Income') {
         income += val;
         countInc++;
       } else {
@@ -445,7 +527,7 @@ export default function App() {
   const categoryStats = useMemo(() => {
     const map: Record<string, number> = {};
     transactions
-      .filter((t) => t.type === 'Expense')
+      .filter((t) => normalizeTransactionType(t.type) === 'Expense')
       .forEach((t) => {
         map[t.category] = (map[t.category] || 0) + Number(t.amount);
       });
@@ -458,7 +540,8 @@ export default function App() {
   // Filtered List for main table
   const filteredList = useMemo(() => {
     return transactions.filter((t) => {
-      const matchType = filterType === 'All' || t.type === filterType;
+      const normType = normalizeTransactionType(t.type);
+      const matchType = filterType === 'All' || normType === filterType;
       const formatted = formatToDaunPenhDisplay(t.date, t.timestamp, t.time);
       const matchSearch =
         !searchQuery ||
@@ -476,9 +559,11 @@ export default function App() {
   // =========================================================================
   const rangeFilteredTransactions = useMemo(() => {
     return transactions.filter((t) => {
-      const isAfterStart = !calcStartDate || t.date >= calcStartDate;
-      const isBeforeEnd = !calcEndDate || t.date <= calcEndDate;
-      const matchesType = calcTypeFilter === 'All' || t.type === calcTypeFilter;
+      const txYMD = normalizeDateToYMD(t.date || t.timestamp);
+      const isAfterStart = !calcStartDate || (txYMD ? txYMD >= calcStartDate : true);
+      const isBeforeEnd = !calcEndDate || (txYMD ? txYMD <= calcEndDate : true);
+      const normType = normalizeTransactionType(t.type);
+      const matchesType = calcTypeFilter === 'All' || normType === calcTypeFilter;
       return isAfterStart && isBeforeEnd && matchesType;
     });
   }, [transactions, calcStartDate, calcEndDate, calcTypeFilter]);
@@ -491,7 +576,8 @@ export default function App() {
 
     rangeFilteredTransactions.forEach((t) => {
       const val = Number(t.amount) || 0;
-      if (t.type === 'Income') {
+      const normType = normalizeTransactionType(t.type);
+      if (normType === 'Income') {
         income += val;
         countInc++;
       } else {
@@ -508,7 +594,7 @@ export default function App() {
     // Expense Categories in this specific range
     const expCatMap: Record<string, number> = {};
     rangeFilteredTransactions
-      .filter((t) => t.type === 'Expense')
+      .filter((t) => normalizeTransactionType(t.type) === 'Expense')
       .forEach((t) => {
         const amt = Number(t.amount) || 0;
         expCatMap[t.category] = (expCatMap[t.category] || 0) + amt;
@@ -521,7 +607,7 @@ export default function App() {
     // Income Categories in this specific range
     const incCatMap: Record<string, number> = {};
     rangeFilteredTransactions
-      .filter((t) => t.type === 'Income')
+      .filter((t) => normalizeTransactionType(t.type) === 'Income')
       .forEach((t) => {
         const amt = Number(t.amount) || 0;
         incCatMap[t.category] = (incCatMap[t.category] || 0) + amt;
