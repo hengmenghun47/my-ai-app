@@ -1045,12 +1045,12 @@ function ensureSheetsInitialized(ss) {
               <Wallet className="w-5 h-5 text-emerald-400" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <span className="font-extrabold text-base tracking-tight text-slate-900 dark:text-white">
-                  Income & Expense Tracker
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-moul text-sm sm:text-base text-slate-900 dark:text-white leading-normal pt-0.5 tracking-normal">
+                  កម្មវិធីចំណូលចំណាយប្រចាំខែ
                 </span>
                 <span
-                  className={`text-[10px] font-semibold px-2 py-0.2 rounded-md border ${
+                  className={`text-[10px] font-semibold px-2 py-0.5 rounded-md border shrink-0 ${
                     isDemoMode
                       ? 'bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800'
                       : 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'

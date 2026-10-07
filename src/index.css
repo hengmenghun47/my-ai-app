@@ -1,3 +1,9 @@
 @import "tailwindcss";
 
+@import url('https://fonts.googleapis.com/css2?family=Moul&display=swap');
+
 @variant dark (&:where(.dark, .dark *));
+
+.font-moul {
+  font-family: 'Moul', 'Khmer OS Muol', 'Khmer OS Muol Light', cursive, serif;
+}

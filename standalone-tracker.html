@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Income & Expense Tracker - Google Sheets Synced</title>
+  <title>កម្មវិធីចំណូលចំណាយប្រចាំខែ</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -14,8 +14,9 @@
   <!-- Lucide Icons CDN -->
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Moul&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
     body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .font-moul { font-family: 'Moul', 'Khmer OS Muol', 'Khmer OS Muol Light', cursive, serif; }
   </style>
 </head>
 <body class="bg-[#f8fafc] dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col font-sans selection:bg-emerald-100 dark:selection:bg-emerald-950 transition-colors duration-200">
@@ -28,9 +29,9 @@
           <i data-lucide="wallet" class="w-5 h-5 text-emerald-400"></i>
         </div>
         <div>
-          <div class="flex items-center gap-2">
-            <span class="font-extrabold text-base tracking-tight text-slate-900 dark:text-white">Income & Expense Tracker</span>
-            <span id="syncBadge" class="text-[10px] font-semibold bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 px-2 py-0.2 rounded-md">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="font-moul text-sm sm:text-base text-slate-900 dark:text-white leading-normal pt-0.5 tracking-normal">កម្មវិធីចំណូលចំណាយប្រចាំខែ</span>
+            <span id="syncBadge" class="text-[10px] font-semibold bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 rounded-md shrink-0">
               Google Sheet Synced
             </span>
           </div>
