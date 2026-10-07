@@ -9,24 +9,29 @@ import {
   ArrowUpRight,
   ArrowDownLeft,
   Calendar,
+  Clock,
   Tag,
   FileText,
   Search,
   Plus,
   RefreshCw,
   ExternalLink,
-  Settings,
   Download,
   Copy,
   Check,
   Code2,
-  X
+  X,
+  Calculator,
+  RotateCcw,
+  ChevronRight,
+  Sparkles
 } from 'lucide-react';
 
 interface Transaction {
   id: string | number;
   timestamp?: string;
   date: string;
+  time?: string;
   type: 'Income' | 'Expense';
   category: string;
   amount: number;
@@ -40,85 +45,210 @@ interface CategoriesState {
 
 const GOOGLE_SHEET_ID = '1748vpezYkZU7ZflHUHgNvdefcswgm7bpAN-WS8MrumM';
 const STORAGE_KEY_URL = 'ledger_google_apps_script_url';
+const TIMEZONE_DAUN_PENH = 'Asia/Phnom_Penh'; // Daun Penh, Phnom Penh, Cambodia (GMT+7)
+
 const DEFAULT_APPS_SCRIPT_URL =
   (import.meta.env as { VITE_APPS_SCRIPT_URL?: string }).VITE_APPS_SCRIPT_URL ||
   'https://script.google.com/macros/s/AKfycbyXTZlHhPAtOQR9UxT7olv_Y0aP_uXsLBs8hFcl1HUuJl_e7UTZe0HTcK9_Qv926qqR/exec';
 
 const DEFAULT_CATEGORIES: CategoriesState = {
   income: [
-    'Salary (ប្រាក់ខែ)',
-    'Freelance (ការងារក្រៅ)',
-    'Business (អាជីវកម្ម)',
+    'Salary',
+    'Freelance',
+    'Business',
     'Investments',
     'Bonus',
     'Gifts',
     'Other Income'
   ],
   expense: [
-    'Food & Dining (ម្ហូបអាហារ)',
-    'Groceries (ផ្សារ)',
-    'Coffee & Drinks (កាហ្វេ)',
-    'Rent & Housing (ថ្លៃផ្ទះ)',
-    'Utilities (ទឹក/ភ្លើង/Wifi)',
-    'Transportation (ការធ្វើដំណើរ)',
-    'Shopping (ទិញឥវ៉ាន់)',
-    'Entertainment (កម្សាន្ត)',
-    'Healthcare (សុខភាព)',
-    'Education (ការសិក្សា)',
+    'Transportation',
+    'Health & Wellness',
+    'Housing & Utilities',
+    'Food & Dining',
+    'Groceries',
+    'Coffee & Drinks',
+    'Shopping',
+    'Entertainment',
+    'Education',
     'Other Expense'
   ]
 };
 
-const DEMO_TRANSACTIONS: Transaction[] = [
-  { id: '1', date: '2026-10-06', type: 'Expense', category: 'Coffee & Drinks (កាហ្វេ)', amount: 2.5, note: 'Amazon Cafe latte', timestamp: '2026-10-06 08:30:00' },
-  { id: '2', date: '2026-10-05', type: 'Expense', category: 'Food & Dining (ម្ហូបអាហារ)', amount: 12.5, note: 'Dinner with friends', timestamp: '2026-10-05 19:40:00' },
-  { id: '3', date: '2026-10-04', type: 'Income', category: 'Freelance (ការងារក្រៅ)', amount: 350.0, note: 'Website design project', timestamp: '2026-10-04 15:10:00' },
-  { id: '4', date: '2026-10-03', type: 'Expense', category: 'Groceries (ផ្សារ)', amount: 18.0, note: 'Supermarket groceries', timestamp: '2026-10-03 11:20:00' },
-  { id: '5', date: '2026-10-02', type: 'Expense', category: 'Rent & Housing (ថ្លៃផ្ទះ)', amount: 250.0, note: 'Monthly room lease', timestamp: '2026-10-02 09:00:00' },
-  { id: '6', date: '2026-10-01', type: 'Income', category: 'Salary (ប្រាក់ខែ)', amount: 1200.0, note: 'October payroll', timestamp: '2026-10-01 08:00:00' }
+// Default demonstration records matching the user's reference interface
+const DEFAULT_DEMO_TRANSACTIONS: Transaction[] = [
+  { id: '1', date: '2026-10-07', time: '10:15:30', timestamp: '2026-10-07 10:15:30', type: 'Expense', category: 'Transportation', amount: 125.0, note: 'Vehicle fuel and maintenance' },
+  { id: '2', date: '2026-10-07', time: '09:20:10', timestamp: '2026-10-07 09:20:10', type: 'Expense', category: 'Health & Wellness', amount: 10.0, note: 'Pharmacy supplies' },
+  { id: '3', date: '2026-10-06', time: '18:45:00', timestamp: '2026-10-06 18:45:00', type: 'Income', category: 'Salary', amount: 500.0, note: 'First half salary' },
+  { id: '4', date: '2026-10-05', time: '14:30:20', timestamp: '2026-10-05 14:30:20', type: 'Income', category: 'Freelance', amount: 200.0, note: 'Website design project' },
+  { id: '5', date: '2026-10-04', time: '11:10:00', timestamp: '2026-10-04 11:10:00', type: 'Income', category: 'Bonus', amount: 50.0, note: 'Performance reward' },
+  { id: '6', date: '2026-10-03', time: '16:00:15', timestamp: '2026-10-03 16:00:15', type: 'Income', category: 'Investments', amount: 10.0, note: 'Dividend return' },
+  { id: '7', date: '2026-10-02', time: '08:00:00', timestamp: '2026-10-02 08:00:00', type: 'Expense', category: 'Housing & Utilities', amount: 0.0, note: 'Meter check' }
 ];
 
+export interface DaunPenhDateTimeInfo {
+  dateYMD: string; // "2026-10-07"
+  timeHMS: string; // "10:15:30"
+  time12: string; // "10:15:30 AM"
+  dayMonthYear: string; // "07-Oct-2026"
+  timestampFull: string; // "2026-10-07 10:15:30"
+}
+
+// Calculates exact live time in Daun Penh (GMT+7)
+export function getDaunPenhNow(targetDate?: Date): DaunPenhDateTimeInfo {
+  const d = targetDate || new Date();
+  const dtf = new Intl.DateTimeFormat('en-GB', {
+    timeZone: TIMEZONE_DAUN_PENH,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  });
+
+  const parts = dtf.formatToParts(d);
+  const partMap: Record<string, string> = {};
+  for (const p of parts) {
+    partMap[p.type] = p.value;
+  }
+
+  const year = partMap.year || '2026';
+  const month = partMap.month || '10';
+  const day = partMap.day || '07';
+  const hour24 = parseInt(partMap.hour || '0', 10);
+  const minute = partMap.minute || '00';
+  const second = partMap.second || '00';
+
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const mIndex = parseInt(month, 10) - 1;
+  const monthName = monthNames[mIndex] || month;
+
+  const ampm = hour24 >= 12 ? 'PM' : 'AM';
+  const hour12 = hour24 % 12 || 12;
+  const hour12Str = String(hour12).padStart(2, '0');
+
+  const dateYMD = `${year}-${month}-${day}`;
+  const timeHMS = `${partMap.hour}:${minute}:${second}`;
+  const time12 = `${hour12Str}:${minute}:${second} ${ampm}`;
+  const dayMonthYear = `${day}-${monthName}-${year}`;
+  const timestampFull = `${dateYMD} ${timeHMS}`;
+
+  return { dateYMD, timeHMS, time12, dayMonthYear, timestampFull };
+}
+
+// Formats date into Day-Month-Year (e.g. 07-Oct-2026) and time
+function formatToDaunPenhDisplay(dateStr?: string, timestampStr?: string, timeStr?: string): {
+  dayMonthYear: string;
+  actualTime: string;
+} {
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  if (timestampStr && timestampStr.trim()) {
+    const s = timestampStr.trim().replace(' ', 'T');
+    const match = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:T|\s+)(\d{2}):(\d{2})(?::(\d{2}))?/);
+    if (match) {
+      const [, yr, mo, da, hr, mn, sc] = match;
+      const mName = monthNames[parseInt(mo, 10) - 1] || mo;
+      const h24 = parseInt(hr, 10);
+      const ampm = h24 >= 12 ? 'PM' : 'AM';
+      const h12 = String(h24 % 12 || 12).padStart(2, '0');
+      return {
+        dayMonthYear: `${da}-${mName}-${yr}`,
+        actualTime: `${h12}:${mn}:${sc || '00'} ${ampm}`
+      };
+    }
+  }
+
+  if (dateStr && dateStr.trim()) {
+    const dMatch = dateStr.trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (dMatch) {
+      const [, yr, mo, da] = dMatch;
+      const mName = monthNames[parseInt(mo, 10) - 1] || mo;
+      const dayMonthYear = `${da}-${mName}-${yr}`;
+
+      if (timeStr && timeStr.trim()) {
+        const tMatch = timeStr.trim().match(/^(\d{2}):(\d{2})(?::(\d{2}))?/);
+        if (tMatch) {
+          const [, hr, mn, sc] = tMatch;
+          const h24 = parseInt(hr, 10);
+          const ampm = h24 >= 12 ? 'PM' : 'AM';
+          const h12 = String(h24 % 12 || 12).padStart(2, '0');
+          return {
+            dayMonthYear,
+            actualTime: `${h12}:${mn}:${sc || '00'} ${ampm}`
+          };
+        }
+      }
+      return { dayMonthYear, actualTime: timeStr || '' };
+    }
+  }
+
+  return {
+    dayMonthYear: dateStr || '—',
+    actualTime: timeStr || timestampStr || ''
+  };
+}
+
+// Formats amounts in USD ($)
+function formatMoney(val: number): string {
+  return `$${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
 export default function App() {
-  // Config & State
+  // Script URL & Config
   const [scriptUrl, setScriptUrl] = useState<string>(() => {
+    return localStorage.getItem(STORAGE_KEY_URL) || DEFAULT_APPS_SCRIPT_URL;
+  });
+  const [inputUrl, setInputUrl] = useState<string>(() => {
     return localStorage.getItem(STORAGE_KEY_URL) || DEFAULT_APPS_SCRIPT_URL;
   });
   const [isUrlModalOpen, setIsUrlModalOpen] = useState<boolean>(false);
   const [isScriptModalOpen, setIsScriptModalOpen] = useState<boolean>(false);
-  const [inputUrl, setInputUrl] = useState<string>(() => {
-    return localStorage.getItem(STORAGE_KEY_URL) || DEFAULT_APPS_SCRIPT_URL;
-  });
   const [isDemoMode, setIsDemoMode] = useState<boolean>(false);
+
+  // Live Daun Penh (GMT+7) Time
+  const [liveDaunPenh, setLiveDaunPenh] = useState<DaunPenhDateTimeInfo>(() => getDaunPenhNow());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setLiveDaunPenh(getDaunPenhNow());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Data
   const [categories, setCategories] = useState<CategoriesState>(DEFAULT_CATEGORIES);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>(DEFAULT_DEMO_TRANSACTIONS);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'error' | 'info' } | null>(null);
 
   // Form State
   const [txType, setTxType] = useState<'Expense' | 'Income'>('Expense');
-  const [txDate, setTxDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
-  const [txCategory, setTxCategory] = useState<string>('');
+  const [txDate, setTxDate] = useState<string>(() => getDaunPenhNow().dateYMD);
+  const [txCategory, setTxCategory] = useState<string>('Transportation');
   const [txAmount, setTxAmount] = useState<string>('');
   const [txNote, setTxNote] = useState<string>('');
 
-  // Filter & Search
+  // Search & Filter for main history table
   const [filterType, setFilterType] = useState<'All' | 'Expense' | 'Income'>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [hasCopiedCode, setHasCopiedCode] = useState<boolean>(false);
 
-  // On Mount: Load data from Google Sheet
-  useEffect(() => {
-    const urlToUse = scriptUrl || DEFAULT_APPS_SCRIPT_URL;
-    if (urlToUse) {
-      fetchSheetData(urlToUse);
-    } else {
-      setIsDemoMode(true);
-      setTransactions(DEMO_TRANSACTIONS);
-    }
-  }, []);
+  // =========================================================================
+  // DATE RANGE CALCULATOR STATE ("Calculate income or expense from ... to ...")
+  // =========================================================================
+  const [calcStartDate, setCalcStartDate] = useState<string>(() => {
+    const now = getDaunPenhNow();
+    const [yr, mo] = now.dateYMD.split('-');
+    return `${yr}-${mo}-01`; // Start of current month
+  });
+  const [calcEndDate, setCalcEndDate] = useState<string>(() => getDaunPenhNow().dateYMD);
+  const [calcTypeFilter, setCalcTypeFilter] = useState<'All' | 'Income' | 'Expense'>('All');
+  const [isCalculating, setIsCalculating] = useState<boolean>(false);
+  const [calculationSummary, setCalculationSummary] = useState<string>('Showing data for current month');
 
   // Sync Category when Type changes
   useEffect(() => {
@@ -128,19 +258,25 @@ export default function App() {
     }
   }, [txType, categories]);
 
+  // Initial Fetch from Google Sheet
+  useEffect(() => {
+    const urlToUse = scriptUrl || DEFAULT_APPS_SCRIPT_URL;
+    if (urlToUse) {
+      fetchSheetData(urlToUse);
+    } else {
+      setIsDemoMode(true);
+      setTransactions(DEFAULT_DEMO_TRANSACTIONS);
+    }
+  }, []);
+
   const showToast = (text: string, type: 'success' | 'error' | 'info' = 'info') => {
     setToastMessage({ text, type });
     setTimeout(() => {
       setToastMessage((prev) => (prev?.text === text ? null : prev));
-    }, 4000);
+    }, 3500);
   };
 
-  // Format currency value cleanly in $ USD
-  const formatMoney = (val: number) => {
-    return `$${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  };
-
-  // Fetch Data from Google Apps Script
+  // Fetch from Google Apps Script
   const fetchSheetData = async (targetUrl = scriptUrl) => {
     if (!targetUrl) {
       setIsUrlModalOpen(true);
@@ -160,27 +296,26 @@ export default function App() {
             expense: data.categories.expense?.length ? data.categories.expense : DEFAULT_CATEGORIES.expense
           });
         }
-        if (Array.isArray(data.records)) {
-          setTransactions(data.records.reverse()); // Latest first
+        if (Array.isArray(data.records) && data.records.length > 0) {
+          setTransactions(data.records.reverse());
         }
         setIsDemoMode(false);
-        showToast('Google Sheet synced successfully!', 'success');
+        showToast('Google Sheet data synced successfully!', 'success');
       } else {
-        throw new Error(data.message || 'Sheet returned error response');
+        throw new Error(data.message || 'Sheet returned error');
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       console.warn('Sync notice:', msg);
-      showToast(`Sync Notice: ${msg}`, 'error');
       if (transactions.length === 0) {
-        setTransactions(DEMO_TRANSACTIONS);
+        setTransactions(DEFAULT_DEMO_TRANSACTIONS);
       }
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Submit Transaction
+  // Form Submit: Auto-captures time via Daun Penh (GMT+7)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const parsedAmount = parseFloat(txAmount);
@@ -189,14 +324,21 @@ export default function App() {
       return;
     }
 
+    const cleanNote = txNote.trim(); // Pure note text without any "$"
+    const dpNow = getDaunPenhNow();
+    const capturedDate = txDate || dpNow.dateYMD;
+    const capturedTime = dpNow.timeHMS;
+    const capturedTimestamp = `${capturedDate} ${capturedTime}`;
+
     const newRecord: Transaction = {
       id: Date.now().toString(),
-      date: txDate,
+      date: capturedDate,
+      time: capturedTime,
+      timestamp: capturedTimestamp,
       type: txType,
       category: txCategory || (txType === 'Income' ? 'Other Income' : 'Other Expense'),
       amount: parsedAmount,
-      note: txNote.trim(), // Pure note text without any currency signs
-      timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19)
+      note: cleanNote
     };
 
     setIsSubmitting(true);
@@ -207,22 +349,23 @@ export default function App() {
         setTxAmount('');
         setTxNote('');
         setIsSubmitting(false);
-        showToast('Saved locally in Demo Mode.', 'success');
-      }, 350);
+        showToast(`Saved locally (Auto-captured at ${dpNow.time12} GMT+7)`, 'success');
+      }, 300);
       return;
     }
 
     try {
-      // Send with text/plain to avoid CORS preflight OPTIONS rejection in Google Apps Script
       const response = await fetch(scriptUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({
           date: newRecord.date,
+          time: newRecord.time,
+          timestamp: newRecord.timestamp,
           type: newRecord.type,
           category: newRecord.category,
           amount: newRecord.amount,
-          note: newRecord.note // Exact note without any "$" sign
+          note: cleanNote
         }),
         redirect: 'follow'
       });
@@ -232,17 +375,17 @@ export default function App() {
         setTransactions((prev) => [newRecord, ...prev]);
         setTxAmount('');
         setTxNote('');
-        showToast('Saved directly to your Google Sheet!', 'success');
+        showToast(`Saved to Google Sheet at ${dpNow.time12} (Daun Penh GMT+7)!`, 'success');
       } else {
         throw new Error(res.message || 'Failed to save');
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.error('Submission notice:', msg);
+      console.warn('Submission fallback:', msg);
       setTransactions((prev) => [newRecord, ...prev]);
       setTxAmount('');
       setTxNote('');
-      showToast(`Saved locally. Sheet sync notice: ${msg}`, 'error');
+      showToast(`Saved locally. Sheet notice: ${msg}`, 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -263,7 +406,7 @@ export default function App() {
     fetchSheetData(cleanUrl);
   };
 
-  // Metrics
+  // Overall Metrics
   const metrics = useMemo(() => {
     let income = 0;
     let expense = 0;
@@ -282,10 +425,23 @@ export default function App() {
     });
 
     const net = income - expense;
-    return { income, expense, net, countInc, countExp };
+    const totalCashFlow = income + expense;
+    const incomeRatio = totalCashFlow > 0 ? Math.round((income / totalCashFlow) * 100) : 50;
+    const expenseRatio = totalCashFlow > 0 ? Math.round((expense / totalCashFlow) * 100) : 50;
+
+    return {
+      income,
+      expense,
+      net,
+      countInc,
+      countExp,
+      totalCount: transactions.length,
+      incomeRatio,
+      expenseRatio
+    };
   }, [transactions]);
 
-  // Category breakdown for expenses
+  // Overall Top Expense Categories Ranked
   const categoryStats = useMemo(() => {
     const map: Record<string, number> = {};
     transactions
@@ -299,61 +455,248 @@ export default function App() {
       .sort((a, b) => b.total - a.total);
   }, [transactions]);
 
-  // Filtered transactions
+  // Filtered List for main table
   const filteredList = useMemo(() => {
     return transactions.filter((t) => {
       const matchType = filterType === 'All' || t.type === filterType;
+      const formatted = formatToDaunPenhDisplay(t.date, t.timestamp, t.time);
       const matchSearch =
         !searchQuery ||
         t.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
         t.note.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        t.date.includes(searchQuery);
+        t.date.includes(searchQuery) ||
+        formatted.dayMonthYear.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        formatted.actualTime.toLowerCase().includes(searchQuery.toLowerCase());
       return matchType && matchSearch;
     });
   }, [transactions, filterType, searchQuery]);
 
-  // Export to CSV
+  // =========================================================================
+  // DATE RANGE CALCULATOR COMPUTATIONS (from ... to ...)
+  // =========================================================================
+  const rangeFilteredTransactions = useMemo(() => {
+    return transactions.filter((t) => {
+      const isAfterStart = !calcStartDate || t.date >= calcStartDate;
+      const isBeforeEnd = !calcEndDate || t.date <= calcEndDate;
+      const matchesType = calcTypeFilter === 'All' || t.type === calcTypeFilter;
+      return isAfterStart && isBeforeEnd && matchesType;
+    });
+  }, [transactions, calcStartDate, calcEndDate, calcTypeFilter]);
+
+  const rangeMetrics = useMemo(() => {
+    let income = 0;
+    let expense = 0;
+    let countInc = 0;
+    let countExp = 0;
+
+    rangeFilteredTransactions.forEach((t) => {
+      const val = Number(t.amount) || 0;
+      if (t.type === 'Income') {
+        income += val;
+        countInc++;
+      } else {
+        expense += val;
+        countExp++;
+      }
+    });
+
+    const net = income - expense;
+    const totalFlow = income + expense;
+    const incomeRatio = totalFlow > 0 ? Math.round((income / totalFlow) * 100) : 0;
+    const expenseRatio = totalFlow > 0 ? Math.round((expense / totalFlow) * 100) : 0;
+
+    // Categories in this specific range
+    const expCatMap: Record<string, number> = {};
+    rangeFilteredTransactions
+      .filter((t) => t.type === 'Expense')
+      .forEach((t) => {
+        const amt = Number(t.amount) || 0;
+        expCatMap[t.category] = (expCatMap[t.category] || 0) + amt;
+      });
+
+    const topExpenseCategories = Object.entries(expCatMap)
+      .map(([name, total]) => ({ name, total }))
+      .sort((a, b) => b.total - a.total);
+
+    return {
+      income,
+      expense,
+      net,
+      countInc,
+      countExp,
+      totalCount: rangeFilteredTransactions.length,
+      incomeRatio,
+      expenseRatio,
+      topExpenseCategories
+    };
+  }, [rangeFilteredTransactions]);
+
+  // Track calculated summary for the user
+  const [lastCalculatedInfo, setLastCalculatedInfo] = useState<{
+    fromText: string;
+    toText: string;
+    income: number;
+    expense: number;
+    net: number;
+    count: number;
+    countInc: number;
+    countExp: number;
+    calculatedAt: string;
+  } | null>(null);
+
+  // Handle Calculate button click
+  const handleCalculateData = () => {
+    setIsCalculating(true);
+    const dpNow = getDaunPenhNow();
+    setTimeout(() => {
+      setIsCalculating(false);
+      const fromText = calcStartDate ? formatToDaunPenhDisplay(calcStartDate).dayMonthYear : 'Beginning of Records';
+      const toText = calcEndDate ? formatToDaunPenhDisplay(calcEndDate).dayMonthYear : 'Today';
+      
+      setLastCalculatedInfo({
+        fromText,
+        toText,
+        income: rangeMetrics.income,
+        expense: rangeMetrics.expense,
+        net: rangeMetrics.net,
+        count: rangeMetrics.totalCount,
+        countInc: rangeMetrics.countInc,
+        countExp: rangeMetrics.countExp,
+        calculatedAt: dpNow.time12
+      });
+
+      setCalculationSummary(`Calculated data from ${fromText} to ${toText}`);
+      showToast(`Calculation complete: Net ${formatMoney(rangeMetrics.net)} (Income: +${formatMoney(rangeMetrics.income)}, Expenses: -${formatMoney(rangeMetrics.expense)})`, 'success');
+    }, 280);
+  };
+
+  // Quick Preset Handlers
+  const applyRangePreset = (preset: 'today' | 'this_week' | 'this_month' | 'last_30_days' | 'this_year' | 'all') => {
+    const now = getDaunPenhNow();
+    const todayYMD = now.dateYMD;
+
+    let newStart = '';
+    let newEnd = todayYMD;
+
+    if (preset === 'today') {
+      newStart = todayYMD;
+      newEnd = todayYMD;
+    } else if (preset === 'this_week') {
+      const curr = new Date();
+      const firstDay = new Date(curr.setDate(curr.getDate() - curr.getDay() + (curr.getDay() === 0 ? -6 : 1))); // Monday
+      newStart = firstDay.toISOString().split('T')[0];
+      newEnd = todayYMD;
+    } else if (preset === 'this_month') {
+      const [yr, mo] = todayYMD.split('-');
+      newStart = `${yr}-${mo}-01`;
+      newEnd = todayYMD;
+    } else if (preset === 'last_30_days') {
+      const d = new Date();
+      d.setDate(d.getDate() - 30);
+      newStart = d.toISOString().split('T')[0];
+      newEnd = todayYMD;
+    } else if (preset === 'this_year') {
+      const [yr] = todayYMD.split('-');
+      newStart = `${yr}-01-01`;
+      newEnd = todayYMD;
+    } else if (preset === 'all') {
+      newStart = '';
+      newEnd = '';
+    }
+
+    setCalcStartDate(newStart);
+    setCalcEndDate(newEnd);
+
+    // Auto-calculate for user convenience on preset click
+    setIsCalculating(true);
+    setTimeout(() => {
+      setIsCalculating(false);
+      const fromText = newStart ? formatToDaunPenhDisplay(newStart).dayMonthYear : 'All Time';
+      const toText = newEnd ? formatToDaunPenhDisplay(newEnd).dayMonthYear : 'Today';
+      setCalculationSummary(`Calculated: ${fromText} to ${toText}`);
+    }, 200);
+  };
+
+  // CSV Export for main ledger
   const exportCSV = () => {
     if (transactions.length === 0) {
       showToast('No records to export', 'info');
       return;
     }
-    const headers = ['Timestamp', 'Date', 'Type', 'Category', 'Amount', 'Note'];
-    const rows = transactions.map((t) => [
-      `"${t.timestamp || ''}"`,
-      `"${t.date}"`,
-      `"${t.type}"`,
-      `"${t.category}"`,
-      t.amount,
-      `"${(t.note || '').replace(/"/g, '""')}"`
-    ]);
+    const headers = ['Timestamp', 'Date (Day Month Year)', 'Actual Time (Daun Penh GMT+7)', 'Type', 'Category', 'Amount', 'Note'];
+    const rows = transactions.map((t) => {
+      const dt = formatToDaunPenhDisplay(t.date, t.timestamp, t.time);
+      return [
+        `"${t.timestamp || ''}"`,
+        `"${dt.dayMonthYear}"`,
+        `"${dt.actualTime}"`,
+        `"${t.type}"`,
+        `"${t.category}"`,
+        t.amount,
+        `"${(t.note || '').replace(/"/g, '""')}"`
+      ];
+    });
     const csvContent =
       'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
     const encoded = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encoded);
-    link.setAttribute('download', `Income_Expense_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `Income_Expense_DaunPenh_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    showToast('Downloaded CSV ledger file!', 'success');
+    showToast('Downloaded CSV Ledger!', 'success');
+  };
+
+  // Export Range CSV
+  const exportRangeCSV = () => {
+    if (rangeFilteredTransactions.length === 0) {
+      showToast('No records in this date range to export', 'info');
+      return;
+    }
+    const headers = ['Timestamp', 'Date (Day Month Year)', 'Actual Time', 'Type', 'Category', 'Amount', 'Note'];
+    const rows = rangeFilteredTransactions.map((t) => {
+      const dt = formatToDaunPenhDisplay(t.date, t.timestamp, t.time);
+      return [
+        `"${t.timestamp || ''}"`,
+        `"${dt.dayMonthYear}"`,
+        `"${dt.actualTime}"`,
+        `"${t.type}"`,
+        `"${t.category}"`,
+        t.amount,
+        `"${(t.note || '').replace(/"/g, '""')}"`
+      ];
+    });
+    const csvContent =
+      'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const encoded = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encoded);
+    link.setAttribute('download', `Calculation_${calcStartDate || 'start'}_to_${calcEndDate || 'end'}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('Downloaded Date Range Report!', 'success');
   };
 
   // Apps Script Code
   const appsScriptCode = `/**
- * Google Apps Script Backend for Personal Income & Expense Tracker
+ * Google Apps Script for Personal Income & Expense Tracker
  * Sheet ID: ${GOOGLE_SHEET_ID}
+ * Timezone: Asia/Phnom_Penh (Daun Penh, GMT+7)
  */
+
 const SPREADSHEET_ID = "${GOOGLE_SHEET_ID}";
 const SHEET_DATA_NAME = "Data";
 const SHEET_SETTINGS_NAME = "Settings";
+const TIMEZONE = "Asia/Phnom_Penh"; // Daun Penh, Phnom Penh, Cambodia (GMT+7)
 
 function doGet(e) {
   try {
     const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
     ensureSheetsInitialized(ss);
 
-    // 1. Read Categories from Settings tab
+    // Read Settings
     const settingsSheet = ss.getSheetByName(SHEET_SETTINGS_NAME);
     const lastRowSettings = Math.max(settingsSheet.getLastRow(), 1);
     let incomeCategories = [];
@@ -369,32 +712,38 @@ function doGet(e) {
       });
     }
 
-    if (incomeCategories.length === 0) {
-      incomeCategories = ["Salary", "Freelance", "Investments", "Bonus", "Gifts", "Other Income"];
-    }
-    if (expenseCategories.length === 0) {
-      expenseCategories = ["Food & Dining", "Groceries", "Rent & Housing", "Utilities", "Transportation", "Shopping", "Entertainment", "Healthcare", "Education", "Other Expense"];
-    }
+    if (incomeCategories.length === 0) incomeCategories = ["Salary", "Freelance", "Investments", "Bonus", "Gifts", "Other Income"];
+    if (expenseCategories.length === 0) expenseCategories = ["Transportation", "Health & Wellness", "Housing & Utilities", "Food & Dining", "Groceries", "Coffee & Drinks", "Shopping", "Entertainment", "Healthcare", "Education", "Other Expense"];
 
-    // 2. Read Historical Records from Data tab
+    // Read Data Records
     const dataSheet = ss.getSheetByName(SHEET_DATA_NAME);
     const lastRowData = dataSheet.getLastRow();
     const records = [];
 
     if (lastRowData > 1) {
-      const dataValues = dataSheet.getRange(2, 1, lastRowData - 1, 6).getValues();
-      for (let i = 0; i < dataValues.length; i++) {
-        const row = dataValues[i];
+      const vals = dataSheet.getRange(2, 1, lastRowData - 1, 6).getValues();
+      for (let i = 0; i < vals.length; i++) {
+        const row = vals[i];
         if (!row[1] && !row[2] && !row[4]) continue;
 
-        let dateStr = row[1] instanceof Date 
-          ? Utilities.formatDate(row[1], Session.getScriptTimeZone() || "GMT", "yyyy-MM-dd") 
-          : String(row[1] || "");
+        let formattedTimestamp = "";
+        if (row[0] instanceof Date) {
+          formattedTimestamp = Utilities.formatDate(row[0], TIMEZONE, "yyyy-MM-dd HH:mm:ss");
+        } else {
+          formattedTimestamp = String(row[0] || "");
+        }
+
+        let formattedDate = "";
+        if (row[1] instanceof Date) {
+          formattedDate = Utilities.formatDate(row[1], TIMEZONE, "yyyy-MM-dd");
+        } else {
+          formattedDate = String(row[1] || "");
+        }
 
         records.push({
           id: i + 1,
-          timestamp: String(row[0] || ""),
-          date: dateStr,
+          timestamp: formattedTimestamp,
+          date: formattedDate,
           type: String(row[2] || "Expense").trim(),
           category: String(row[3] || "Other").trim(),
           amount: parseFloat(row[4]) || 0,
@@ -405,10 +754,11 @@ function doGet(e) {
 
     return ContentService.createTextOutput(JSON.stringify({
       status: "success",
+      sheetId: SPREADSHEET_ID,
       categories: { income: incomeCategories, expense: expenseCategories },
-      records: records
+      records: records,
+      totalRecords: records.length
     })).setMimeType(ContentService.MimeType.JSON);
-
   } catch (err) {
     return ContentService.createTextOutput(JSON.stringify({
       status: "error",
@@ -424,32 +774,44 @@ function doPost(e) {
 
     let data = {};
     if (e && e.postData && e.postData.contents) {
-      try { data = JSON.parse(e.postData.contents); } catch(err) { data = e.parameter || {}; }
+      try { data = JSON.parse(e.postData.contents); } catch (ex) { data = e.parameter || {}; }
     } else if (e && e.parameter) {
       data = e.parameter;
     }
 
-    const date = data.date || Utilities.formatDate(new Date(), Session.getScriptTimeZone() || "GMT", "yyyy-MM-dd");
+    const now = new Date();
+    const date = data.date || Utilities.formatDate(now, TIMEZONE, "yyyy-MM-dd");
     const type = (data.type && String(data.type).toLowerCase() === "income") ? "Income" : "Expense";
     const category = String(data.category || (type === "Income" ? "Other Income" : "Other Expense")).trim();
     const amount = parseFloat(data.amount);
-    const note = String(data.note || "").trim();
+    const note = String(data.note || "").trim(); // Pure note without any "$" sign
 
     if (isNaN(amount) || amount <= 0) {
-      return ContentService.createTextOutput(JSON.stringify({ status: "error", message: "Invalid amount." })).setMimeType(ContentService.MimeType.JSON);
+      return ContentService.createTextOutput(JSON.stringify({ status: "error", message: "Invalid amount." }))
+        .setMimeType(ContentService.MimeType.JSON);
     }
 
     const dataSheet = ss.getSheetByName(SHEET_DATA_NAME);
-    const now = new Date();
-    dataSheet.appendRow([now, date, type, category, amount, note]);
+    const formattedTimestamp = data.timestamp || Utilities.formatDate(now, TIMEZONE, "yyyy-MM-dd HH:mm:ss");
+
+    // Columns: Timestamp, Date, Type, Category, Amount, Note
+    dataSheet.appendRow([
+      formattedTimestamp,
+      date,
+      type,
+      category,
+      amount,
+      note
+    ]);
 
     return ContentService.createTextOutput(JSON.stringify({
       status: "success",
-      message: "Row added successfully"
+      message: "Row appended successfully in Daun Penh (GMT+7) time",
+      record: { timestamp: formattedTimestamp, date: date, type: type, category: category, amount: amount, note: note }
     })).setMimeType(ContentService.MimeType.JSON);
-
   } catch (err) {
-    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: err.toString() })).setMimeType(ContentService.MimeType.JSON);
+    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
   }
 }
 
@@ -458,162 +820,164 @@ function ensureSheetsInitialized(ss) {
   if (!dataSheet) dataSheet = ss.insertSheet(SHEET_DATA_NAME);
   if (dataSheet.getLastRow() === 0) {
     dataSheet.appendRow(["Timestamp", "Date", "Type", "Category", "Amount", "Note"]);
+    dataSheet.getRange(1, 1, 1, 6).setFontWeight("bold").setBackground("#F3F4F6");
   }
 
   let settingsSheet = ss.getSheetByName(SHEET_SETTINGS_NAME);
   if (!settingsSheet) settingsSheet = ss.insertSheet(SHEET_SETTINGS_NAME);
   if (settingsSheet.getLastRow() === 0) {
     settingsSheet.appendRow(["Income Categories", "Expences Categories"]);
+    settingsSheet.getRange(1, 1, 1, 2).setFontWeight("bold").setBackground("#F3F4F6");
+    const dInc = ["Salary", "Freelance", "Investments", "Bonus", "Gifts", "Other Income"];
+    const dExp = ["Transportation", "Health & Wellness", "Housing & Utilities", "Food & Dining", "Groceries", "Coffee & Drinks", "Shopping", "Entertainment", "Healthcare", "Education", "Other Expense"];
+    const max = Math.max(dInc.length, dExp.length);
+    for (let i = 0; i < max; i++) {
+      settingsSheet.appendRow([dInc[i] || "", dExp[i] || ""]);
+    }
   }
 }`;
 
-  const copyScript = () => {
-    navigator.clipboard.writeText(appsScriptCode);
-    setHasCopiedCode(true);
-    showToast('Apps Script code copied to clipboard!', 'success');
-    setTimeout(() => setHasCopiedCode(false), 3000);
-  };
-
   return (
-    <div className="min-h-screen bg-[#F8F9FA] text-[#1E293B] font-sans antialiased selection:bg-emerald-100 flex flex-col">
-      {/* TOAST FEEDBACK */}
+    <div className="min-h-screen bg-[#f8fafc] text-slate-800 flex flex-col font-sans selection:bg-emerald-100">
+      {/* Toast Notification */}
       {toastMessage && (
         <div
-          className={`fixed bottom-5 right-5 z-50 flex items-center gap-2.5 px-4 py-3 rounded-2xl shadow-xl text-xs font-medium border animate-in fade-in ${
+          className={`fixed bottom-5 right-5 z-50 px-4 py-3 rounded-2xl shadow-lg border text-xs font-semibold flex items-center gap-2 transition-all duration-300 animate-in fade-in slide-in-from-bottom-3 ${
             toastMessage.type === 'success'
-              ? 'bg-emerald-900 text-white border-emerald-800'
+              ? 'bg-emerald-900 text-white border-emerald-700'
               : toastMessage.type === 'error'
-              ? 'bg-rose-900 text-white border-rose-800'
-              : 'bg-slate-900 text-white border-slate-800'
+              ? 'bg-rose-900 text-white border-rose-700'
+              : 'bg-slate-900 text-white border-slate-700'
           }`}
         >
           <span>{toastMessage.text}</span>
-          <button onClick={() => setToastMessage(null)} className="ml-1 opacity-70 hover:opacity-100">
+          <button
+            onClick={() => setToastMessage(null)}
+            className="ml-2 hover:opacity-80 cursor-pointer"
+          >
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
       )}
 
-      {/* TOP CLEAN NAVIGATION */}
-      <header className="bg-white border-b border-[#E2E8F0] sticky top-0 z-30">
+      {/* TOP HEADER */}
+      <header className="bg-white border-b border-slate-200/80 sticky top-0 z-30 shadow-xs">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          {/* Brand */}
+          {/* Logo & Info */}
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold shadow-xs">
-              <Wallet className="w-5 h-5" />
+            <div className="w-9 h-9 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold shadow-xs">
+              <Wallet className="w-5 h-5 text-emerald-400" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-bold text-base tracking-tight text-slate-900">LedgerSheet</span>
-                {isDemoMode ? (
-                  <span className="text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.2 rounded-md">
-                    Demo
-                  </span>
-                ) : (
-                  <span className="text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.2 rounded-md flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                    Sheet Synced
-                  </span>
-                )}
+                <span className="font-extrabold text-base tracking-tight text-slate-900">
+                  Income & Expense Tracker
+                </span>
+                <span
+                  className={`text-[10px] font-semibold px-2 py-0.2 rounded-md border ${
+                    isDemoMode
+                      ? 'bg-amber-50 text-amber-700 border-amber-200'
+                      : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                  }`}
+                >
+                  Google Sheet Synced
+                </span>
               </div>
               <p className="text-[11px] text-slate-400 hidden sm:block">
-                Connected to Google Sheet: <span className="font-mono text-slate-600 font-semibold">{GOOGLE_SHEET_ID.substring(0, 6)}...</span>
+                Sheet ID: <code className="font-mono text-slate-600 font-semibold">{GOOGLE_SHEET_ID}</code>
               </p>
             </div>
           </div>
 
-          {/* Controls: Actions & Settings */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          {/* Right Header Controls */}
+          <div className="flex items-center gap-2.5">
             {/* Sync Button */}
             <button
               onClick={() => fetchSheetData()}
               disabled={isLoading}
-              className="p-2 text-slate-600 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition-colors cursor-pointer"
-              title="Sync with Google Sheet"
+              className="p-2 text-slate-600 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition-colors cursor-pointer disabled:opacity-50"
+              title="Sync Sheet"
             >
               <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-emerald-600' : ''}`} />
             </button>
 
-            {/* Setup / Settings Drawer Trigger */}
+            {/* Apps Script Settings */}
             <button
               onClick={() => setIsScriptModalOpen(true)}
               className="p-2 text-slate-600 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition-colors cursor-pointer"
-              title="Google Apps Script Setup"
+              title="Settings & Code"
             >
               <Code2 className="w-4 h-4" />
-            </button>
-
-            {/* URL Modal */}
-            <button
-              onClick={() => setIsUrlModalOpen(true)}
-              className="p-2 text-slate-600 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition-colors cursor-pointer"
-              title="Configure Web App URL"
-            >
-              <Settings className="w-4 h-4" />
             </button>
           </div>
         </div>
       </header>
 
-      {/* MAIN CONTENT AREA */}
+      {/* MAIN CONTAINER */}
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 flex-1 w-full space-y-6">
-        {/* 1. BALANCE HERO CARD */}
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-sm relative overflow-hidden">
+
+        {/* 1. TOP NET BALANCE HERO CARD */}
+        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-sm">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-            {/* Total Balance */}
             <div>
               <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1">
-                Net Balance · សមតុល្យសរុប
+                NET BALANCE · សមតុល្យសរុប
               </span>
               <div
-                className={`text-3xl sm:text-4xl font-extrabold tracking-tight ${
+                className={`text-4xl sm:text-5xl font-extrabold tracking-tight ${
                   metrics.net >= 0 ? 'text-slate-900' : 'text-rose-600'
                 }`}
               >
                 {metrics.net < 0 ? '-' : ''}
                 {formatMoney(Math.abs(metrics.net))}
               </div>
-              <p className="text-xs text-slate-400 mt-1">
-                Based on {transactions.length} transactions in your Google Sheet
+              <p className="text-xs text-slate-400 mt-1.5 flex items-center gap-1.5">
+                <span>Based on {metrics.totalCount} transactions in your Google Sheet</span>
+                <span className="text-slate-300">•</span>
+                <span className="text-emerald-700 font-mono font-medium">Daun Penh {liveDaunPenh.time12}</span>
               </p>
             </div>
 
-            {/* Income & Expense Mini-Cards */}
             <div className="flex items-center gap-3 sm:gap-4">
-              {/* Income */}
-              <div className="bg-emerald-50/70 border border-emerald-100 rounded-2xl p-4 min-w-[140px] sm:min-w-[160px]">
+              {/* Income Card */}
+              <div className="bg-[#ecfdf5] border border-emerald-200/80 rounded-2xl p-4 min-w-[150px] sm:min-w-[170px]">
                 <div className="flex items-center gap-1.5 text-emerald-700 text-xs font-semibold mb-1">
-                  <div className="w-5 h-5 rounded-md bg-emerald-600 text-white flex items-center justify-center">
+                  <div className="w-5 h-5 rounded-md bg-emerald-600 text-white flex items-center justify-center shadow-xs">
                     <ArrowDownLeft className="w-3.5 h-3.5" />
                   </div>
                   <span>Income · ចំណូល</span>
                 </div>
-                <div className="text-lg sm:text-xl font-bold text-emerald-700">
+                <div className="text-xl sm:text-2xl font-bold text-emerald-700">
                   +{formatMoney(metrics.income)}
                 </div>
-                <div className="text-[11px] text-emerald-600/80 mt-0.5">{metrics.countInc} entries</div>
+                <div className="text-xs text-emerald-600 mt-0.5">
+                  {metrics.countInc} entries
+                </div>
               </div>
 
-              {/* Expense */}
-              <div className="bg-rose-50/70 border border-rose-100 rounded-2xl p-4 min-w-[140px] sm:min-w-[160px]">
+              {/* Expense Card */}
+              <div className="bg-[#fff1f2] border border-rose-200/80 rounded-2xl p-4 min-w-[150px] sm:min-w-[170px]">
                 <div className="flex items-center gap-1.5 text-rose-700 text-xs font-semibold mb-1">
-                  <div className="w-5 h-5 rounded-md bg-rose-600 text-white flex items-center justify-center">
+                  <div className="w-5 h-5 rounded-md bg-rose-600 text-white flex items-center justify-center shadow-xs">
                     <ArrowUpRight className="w-3.5 h-3.5" />
                   </div>
                   <span>Expense · ចំណាយ</span>
                 </div>
-                <div className="text-lg sm:text-xl font-bold text-rose-700">
+                <div className="text-xl sm:text-2xl font-bold text-rose-700">
                   -{formatMoney(metrics.expense)}
                 </div>
-                <div className="text-[11px] text-rose-600/80 mt-0.5">{metrics.countExp} entries</div>
+                <div className="text-xs text-rose-600 mt-0.5">
+                  {metrics.countExp} entries
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* 2. MAIN WORKSPACE: FORM + EXPENSES BREAKDOWN */}
+        {/* 2. MIDDLE SECTION: ADD TRANSACTION (LEFT) & RATIO / CATEGORIES (RIGHT) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* NEW TRANSACTION FORM (5 cols) */}
+          
+          {/* ADD TRANSACTION CARD (5 cols) */}
           <div className="lg:col-span-5 bg-white rounded-3xl p-6 border border-slate-200/90 shadow-sm">
             <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
               <div>
@@ -631,8 +995,10 @@ function ensureSheetsInitialized(ss) {
                 <button
                   type="button"
                   onClick={() => setTxType('Expense')}
-                  className={`py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                    txType === 'Expense' ? 'bg-rose-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                  className={`py-2.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    txType === 'Expense'
+                      ? 'bg-[#e11d48] text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
                   <ArrowUpRight className="w-3.5 h-3.5" />
@@ -641,8 +1007,10 @@ function ensureSheetsInitialized(ss) {
                 <button
                   type="button"
                   onClick={() => setTxType('Income')}
-                  className={`py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                    txType === 'Income' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                  className={`py-2.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    txType === 'Income'
+                      ? 'bg-emerald-600 text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
                   <ArrowDownLeft className="w-3.5 h-3.5" />
@@ -670,8 +1038,8 @@ function ensureSheetsInitialized(ss) {
                     className="w-full pl-9 pr-4 py-3 text-base font-bold bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-900 transition-colors"
                   />
                 </div>
-                {/* Quick amount chips */}
-                <div className="flex items-center gap-1.5 mt-2 text-xs">
+                {/* Quick Chips */}
+                <div className="flex items-center gap-1.5 mt-2 text-xs flex-wrap">
                   <span className="text-[11px] text-slate-400">Quick:</span>
                   {[5, 10, 20, 50, 100].map((q) => (
                     <button
@@ -686,21 +1054,31 @@ function ensureSheetsInitialized(ss) {
                 </div>
               </div>
 
-              {/* Date & Category */}
+              {/* Date & Category Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Date */}
                 <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1">
-                    Date · កាលបរិច្ឆេទ
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={txDate}
-                    onChange={(e) => setTxDate(e.target.value)}
-                    className="w-full px-3 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900"
-                  />
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-semibold text-slate-500">
+                      Date · កាលបរិច្ឆេទ
+                    </label>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="date"
+                      required
+                      value={txDate}
+                      onChange={(e) => setTxDate(e.target.value)}
+                      className="w-full px-3 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 font-mono text-slate-800"
+                    />
+                  </div>
+                  <div className="text-[10px] text-slate-400 mt-1 flex items-center justify-between">
+                    <span>{formatToDaunPenhDisplay(txDate).dayMonthYear}</span>
+                    <span className="text-emerald-700 font-mono font-medium">Time: Auto (GMT+7)</span>
+                  </div>
                 </div>
 
+                {/* Category */}
                 <div>
                   <label className="block text-xs font-semibold text-slate-500 mb-1">
                     Category · ប្រភេទ
@@ -709,7 +1087,7 @@ function ensureSheetsInitialized(ss) {
                     required
                     value={txCategory}
                     onChange={(e) => setTxCategory(e.target.value)}
-                    className="w-full px-3 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 truncate"
+                    className="w-full px-3 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 text-slate-800 truncate"
                   >
                     {(txType === 'Income' ? categories.income : categories.expense).map((cat) => (
                       <option key={cat} value={cat}>
@@ -720,7 +1098,7 @@ function ensureSheetsInitialized(ss) {
                 </div>
               </div>
 
-              {/* Note / Description */}
+              {/* Note / Description (NO $ SIGN!) */}
               <div>
                 <label className="block text-xs font-semibold text-slate-500 mb-1">
                   Note / Description · ចំណាំ
@@ -738,16 +1116,16 @@ function ensureSheetsInitialized(ss) {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full py-3.5 px-4 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-2xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                className="w-full py-3.5 px-4 bg-[#0f172a] hover:bg-slate-800 text-white font-bold text-xs rounded-2xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 {isSubmitting ? (
                   <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <RefreshCw className="w-4 h-4 animate-spin text-emerald-400" />
                     <span>Saving to Google Sheet...</span>
                   </>
                 ) : (
                   <>
-                    <Plus className="w-4 h-4 stroke-[2.5]" />
+                    <Plus className="w-4 h-4 text-white stroke-[2.5]" />
                     <span>Save {txType === 'Income' ? 'Income' : 'Expense'} Entry</span>
                   </>
                 )}
@@ -755,9 +1133,10 @@ function ensureSheetsInitialized(ss) {
             </form>
           </div>
 
-          {/* SPENDING BREAKDOWN & RATIO (7 cols) */}
+          {/* CASH FLOW RATIO & TOP CATEGORIES (7 cols) */}
           <div className="lg:col-span-7 space-y-6">
-            {/* Cash Ratio Progress */}
+            
+            {/* Cash Flow Ratio Card */}
             <div className="bg-white rounded-3xl p-6 border border-slate-200/90 shadow-sm">
               <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
                 <h3 className="font-bold text-sm text-slate-900">Cash Flow Ratio</h3>
@@ -765,82 +1144,65 @@ function ensureSheetsInitialized(ss) {
               </div>
 
               <div className="space-y-4">
+                {/* Income Ratio */}
                 <div>
                   <div className="flex justify-between text-xs font-semibold mb-1">
                     <span className="text-emerald-700">Income (+{formatMoney(metrics.income)})</span>
-                    <span className="text-slate-400">
-                      {metrics.income + metrics.expense > 0
-                        ? Math.round((metrics.income / (metrics.income + metrics.expense)) * 100)
-                        : 50}
-                      %
-                    </span>
+                    <span className="text-slate-400 font-mono">{metrics.incomeRatio}%</span>
                   </div>
-                  <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden">
+                  <div className="h-3.5 w-full bg-slate-100 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-emerald-500 rounded-full transition-all duration-500"
-                      style={{
-                        width: `${
-                          metrics.income + metrics.expense > 0
-                            ? Math.round((metrics.income / (metrics.income + metrics.expense)) * 100)
-                            : 50
-                        }%`
-                      }}
-                    ></div>
+                      className="h-full bg-[#10b981] rounded-full transition-all duration-500"
+                      style={{ width: `${metrics.incomeRatio}%` }}
+                    />
                   </div>
                 </div>
 
+                {/* Expense Ratio */}
                 <div>
                   <div className="flex justify-between text-xs font-semibold mb-1">
                     <span className="text-rose-700">Expenses (-{formatMoney(metrics.expense)})</span>
-                    <span className="text-slate-400">
-                      {metrics.income + metrics.expense > 0
-                        ? Math.round((metrics.expense / (metrics.income + metrics.expense)) * 100)
-                        : 50}
-                      %
-                    </span>
+                    <span className="text-slate-400 font-mono">{metrics.expenseRatio}%</span>
                   </div>
-                  <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden">
+                  <div className="h-3.5 w-full bg-slate-100 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-rose-500 rounded-full transition-all duration-500"
-                      style={{
-                        width: `${
-                          metrics.income + metrics.expense > 0
-                            ? Math.round((metrics.expense / (metrics.income + metrics.expense)) * 100)
-                            : 50
-                        }%`
-                      }}
-                    ></div>
+                      className="h-full bg-[#f43f5e] rounded-full transition-all duration-500"
+                      style={{ width: `${metrics.expenseRatio}%` }}
+                    />
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Top Categories Breakdown */}
+            {/* Top Expense Categories Card */}
             <div className="bg-white rounded-3xl p-6 border border-slate-200/90 shadow-sm">
               <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
-                <h3 className="font-bold text-sm text-slate-900">Top Expense Categories · ការចំណាយតាមប្រភេទ</h3>
+                <h3 className="font-bold text-sm text-slate-900">
+                  Top Expense Categories · ការចំណាយតាមប្រភេទ
+                </h3>
                 <span className="text-xs text-slate-400">Ranked</span>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {categoryStats.length === 0 ? (
-                  <div className="py-8 text-center text-slate-400 text-xs">No expense data yet.</div>
+                  <div className="py-6 text-center text-slate-400 text-xs">No expenses recorded yet.</div>
                 ) : (
                   categoryStats.slice(0, 5).map((cat) => {
                     const pct = metrics.expense > 0 ? Math.round((cat.total / metrics.expense) * 100) : 0;
                     return (
-                      <div key={cat.name} className="space-y-1">
+                      <div key={cat.name} className="space-y-1.5">
                         <div className="flex items-center justify-between text-xs">
                           <span className="font-semibold text-slate-700">{cat.name}</span>
-                          <span className="font-mono font-bold text-slate-900">
-                            {formatMoney(cat.total)} <span className="text-slate-400 font-normal">({pct}%)</span>
+                          <span className="font-mono text-slate-900">
+                            <span className="font-bold">{formatMoney(cat.total)}</span>{' '}
+                            <span className="text-slate-400 font-normal">({pct}%)</span>
                           </span>
                         </div>
                         <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
                           <div
-                            className="h-full bg-slate-700 rounded-full transition-all duration-300"
+                            className="h-full bg-[#1e293b] rounded-full transition-all duration-300"
                             style={{ width: `${pct}%` }}
-                          ></div>
+                          />
                         </div>
                       </div>
                     );
@@ -848,27 +1210,34 @@ function ensureSheetsInitialized(ss) {
                 )}
               </div>
             </div>
+
           </div>
+
         </div>
 
         {/* 3. TRANSACTION HISTORY TABLE */}
         <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-sm">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 mb-4 border-b border-slate-100">
             <div>
-              <h2 className="font-bold text-base text-slate-900">Transaction History · ប្រវត្តិប្រតិបត្តិការ</h2>
-              <p className="text-xs text-slate-400">Synced directly with Google Sheet "Data" tab</p>
+              <h2 className="font-bold text-base text-slate-900">
+                Transaction History · ប្រវត្តិប្រតិបត្តិការ
+              </h2>
+              <p className="text-xs text-slate-400">
+                Synced directly with Google Sheet "Data" tab
+              </p>
             </div>
 
-            {/* Toolbar */}
+            {/* Filter buttons & Export icon */}
             <div className="flex items-center gap-2">
-              {/* Type filter */}
               <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl text-xs font-semibold">
                 {(['All', 'Expense', 'Income'] as const).map((t) => (
                   <button
                     key={t}
                     onClick={() => setFilterType(t)}
                     className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
-                      filterType === t ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-900'
+                      filterType === t
+                        ? 'bg-white text-slate-900 shadow-xs'
+                        : 'text-slate-500 hover:text-slate-900'
                     }`}
                   >
                     {t}
@@ -876,7 +1245,7 @@ function ensureSheetsInitialized(ss) {
                 ))}
               </div>
 
-              {/* Export */}
+              {/* Download CSV */}
               <button
                 onClick={exportCSV}
                 className="p-1.5 text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
@@ -921,16 +1290,43 @@ function ensureSheetsInitialized(ss) {
                 ) : (
                   filteredList.map((tx) => {
                     const isInc = tx.type === 'Income';
+                    const dt = formatToDaunPenhDisplay(tx.date, tx.timestamp, tx.time);
+
                     return (
                       <tr key={tx.id} className="hover:bg-slate-50 transition-colors">
-                        <td className="py-3.5 px-3 font-mono text-slate-500 whitespace-nowrap">{tx.date}</td>
+                        {/* Date with Day-Month-Year and Time */}
+                        <td className="py-3.5 px-3 font-mono text-slate-500 whitespace-nowrap">
+                          <div className="font-semibold text-slate-800">{dt.dayMonthYear}</div>
+                          {dt.actualTime && (
+                            <div className="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
+                              <Clock className="w-3 h-3 text-emerald-600" />
+                              <span>{dt.actualTime}</span>
+                            </div>
+                          )}
+                        </td>
+
+                        {/* Type */}
                         <td className="py-3.5 px-3 whitespace-nowrap">
-                          <span className={`font-semibold ${isInc ? 'text-emerald-600' : 'text-rose-600'}`}>
+                          <span
+                            className={`font-semibold ${
+                              isInc ? 'text-emerald-600' : 'text-rose-600'
+                            }`}
+                          >
                             {isInc ? '↑ Income' : '↓ Expense'}
                           </span>
                         </td>
-                        <td className="py-3.5 px-3 font-semibold text-slate-800 whitespace-nowrap">{tx.category}</td>
-                        <td className="py-3.5 px-3 text-slate-500 max-w-xs truncate">{tx.note || '—'}</td>
+
+                        {/* Category */}
+                        <td className="py-3.5 px-3 font-semibold text-slate-800 whitespace-nowrap">
+                          {tx.category}
+                        </td>
+
+                        {/* Note (NO $ sign!) */}
+                        <td className="py-3.5 px-3 text-slate-500 max-w-xs truncate">
+                          {tx.note || '—'}
+                        </td>
+
+                        {/* Amount */}
                         <td
                           className={`py-3.5 px-3 text-right font-mono font-bold whitespace-nowrap ${
                             isInc ? 'text-emerald-600' : 'text-slate-900'
@@ -947,149 +1343,510 @@ function ensureSheetsInitialized(ss) {
             </table>
           </div>
         </div>
-      </main>
 
-      {/* FOOTER */}
-      <footer className="bg-white border-t border-slate-200 mt-12 py-6 text-xs text-slate-400">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div>
-            Google Sheet ID: <code className="font-mono bg-slate-100 px-1 py-0.5 rounded text-slate-600">{GOOGLE_SHEET_ID}</code>
-          </div>
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setIsScriptModalOpen(true)}
-              className="text-slate-600 hover:text-slate-900 font-medium underline cursor-pointer"
-            >
-              Apps Script Code & Setup
-            </button>
-            <a
-              href={`https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/edit`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-emerald-600 hover:underline inline-flex items-center gap-1"
-            >
-              Open Google Sheet
-              <ExternalLink className="w-3 h-3" />
-            </a>
-          </div>
-        </div>
-      </footer>
-
-      {/* MODAL: URL CONFIGURATION */}
-      {isUrlModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl border border-slate-100">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-              <h3 className="font-bold text-base text-slate-900">Google Apps Script URL</h3>
-              <button onClick={() => setIsUrlModalOpen(false)} className="text-slate-400 hover:text-slate-600">
-                <X className="w-5 h-5" />
-              </button>
+        {/* ================================================================= */}
+        {/* 4. DATE RANGE CALCULATOR WITH EXPLICIT "CALCULATE" BUTTON */}
+        {/* ================================================================= */}
+        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-sm space-y-6">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center font-bold shadow-xs">
+                <Calculator className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h2 className="font-bold text-base text-slate-900 flex items-center gap-2">
+                  <span>Calculate by Selected Date</span>
+                  <span className="text-xs font-normal text-slate-400">· គណនាតាមកាលបរិច្ឆេទ</span>
+                </h2>
+                <p className="text-xs text-slate-500">
+                  Select your date range and click <strong className="text-emerald-700">Calculate Data</strong> below
+                </p>
+              </div>
             </div>
 
-            <p className="text-xs text-slate-500 mb-4 leading-relaxed">
-              Enter the Web App URL deployed from your Google Sheet (ends with{' '}
-              <code className="font-mono text-slate-700 bg-slate-100 px-1 py-0.5 rounded">/exec</code>).
-            </p>
+            {/* Quick Export button for Date Range */}
+            <button
+              onClick={exportRangeCSV}
+              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer self-start sm:self-auto"
+              title="Download Range Report"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Export Range CSV</span>
+            </button>
+          </div>
 
-            <form onSubmit={handleSaveUrl} className="space-y-4">
-              <div>
+          {/* DATE RANGE FILTER CONTROLS & CALCULATE ACTION */}
+          <div className="bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200 space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+              {/* From Date */}
+              <div className="sm:col-span-3">
+                <label className="block text-xs font-semibold text-slate-600 mb-1">
+                  From Date · ចាប់ពីកាលបរិច្ឆេទ
+                </label>
                 <input
-                  type="url"
-                  required
-                  placeholder="https://script.google.com/macros/s/.../exec"
-                  value={inputUrl}
-                  onChange={(e) => setInputUrl(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs font-mono bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900"
+                  type="date"
+                  value={calcStartDate}
+                  onChange={(e) => setCalcStartDate(e.target.value)}
+                  className="w-full px-3 py-2.5 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-600 font-mono text-slate-800"
                 />
+                {calcStartDate && (
+                  <p className="text-[10px] text-slate-400 mt-1 font-mono">
+                    {formatToDaunPenhDisplay(calcStartDate).dayMonthYear}
+                  </p>
+                )}
               </div>
 
-              <div className="flex items-center justify-between pt-2">
+              {/* Arrow */}
+              <div className="hidden sm:flex sm:col-span-1 items-center justify-center pb-3 text-slate-400 font-bold">
+                <ChevronRight className="w-4 h-4" />
+              </div>
+
+              {/* To Date */}
+              <div className="sm:col-span-3">
+                <label className="block text-xs font-semibold text-slate-600 mb-1">
+                  To Date · ដល់កាលបរិច្ឆេទ
+                </label>
+                <input
+                  type="date"
+                  value={calcEndDate}
+                  onChange={(e) => setCalcEndDate(e.target.value)}
+                  className="w-full px-3 py-2.5 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-600 font-mono text-slate-800"
+                />
+                {calcEndDate && (
+                  <p className="text-[10px] text-slate-400 mt-1 font-mono">
+                    {formatToDaunPenhDisplay(calcEndDate).dayMonthYear}
+                  </p>
+                )}
+              </div>
+
+              {/* Type Switcher */}
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-semibold text-slate-600 mb-1">
+                  Type · ប្រភេទ
+                </label>
+                <div className="flex items-center p-0.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold">
+                  {(['All', 'Income', 'Expense'] as const).map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setCalcTypeFilter(t)}
+                      className={`flex-1 py-1.5 rounded-lg text-center transition-all cursor-pointer ${
+                        calcTypeFilter === t
+                          ? 'bg-slate-900 text-white shadow-xs'
+                          : 'text-slate-500 hover:text-slate-900'
+                      }`}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* PROMINENT "CALCULATE DATA FOR ME" BUTTON (REQUESTED BY USER) */}
+              <div className="sm:col-span-3">
                 <button
                   type="button"
-                  onClick={() => {
-                    setIsDemoMode(true);
-                    setIsUrlModalOpen(false);
-                    showToast('Using Demo Mode', 'info');
-                  }}
-                  className="text-xs text-slate-500 hover:underline"
+                  id="btnCalculateData"
+                  onClick={handleCalculateData}
+                  disabled={isCalculating}
+                  className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-xs rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                  title="Click to calculate total income, expenses, and net balance for selected dates"
                 >
-                  Demo Mode
+                  {isCalculating ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                      <span>Calculating Data...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Calculator className="w-4 h-4 text-white" />
+                      <span>Calculate Data for Me · គណនា</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Presets Row & Direct Big Calculate Action */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-slate-200/70 text-xs">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[11px] font-semibold text-slate-500">Quick Presets:</span>
+                <button
+                  type="button"
+                  onClick={() => applyRangePreset('today')}
+                  className="px-2.5 py-1 bg-white hover:bg-slate-200/80 border border-slate-200 rounded-lg text-[11px] text-slate-700 transition-colors cursor-pointer font-medium"
+                >
+                  Today
                 </button>
                 <button
-                  type="submit"
-                  className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl transition-colors cursor-pointer"
+                  type="button"
+                  onClick={() => applyRangePreset('this_week')}
+                  className="px-2.5 py-1 bg-white hover:bg-slate-200/80 border border-slate-200 rounded-lg text-[11px] text-slate-700 transition-colors cursor-pointer font-medium"
                 >
-                  Save & Connect
+                  This Week
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyRangePreset('this_month')}
+                  className="px-2.5 py-1 bg-white hover:bg-slate-200/80 border border-slate-200 rounded-lg text-[11px] text-slate-700 transition-colors cursor-pointer font-medium"
+                >
+                  This Month
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyRangePreset('last_30_days')}
+                  className="px-2.5 py-1 bg-white hover:bg-slate-200/80 border border-slate-200 rounded-lg text-[11px] text-slate-700 transition-colors cursor-pointer font-medium"
+                >
+                  Last 30 Days
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyRangePreset('this_year')}
+                  className="px-2.5 py-1 bg-white hover:bg-slate-200/80 border border-slate-200 rounded-lg text-[11px] text-slate-700 transition-colors cursor-pointer font-medium"
+                >
+                  This Year
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyRangePreset('all')}
+                  className="px-2.5 py-1 bg-white hover:bg-slate-200/80 border border-slate-200 rounded-lg text-[11px] text-slate-700 transition-colors cursor-pointer font-medium"
+                >
+                  All Time
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
 
-      {/* MODAL: APPS SCRIPT SETUP GUIDE */}
+              {/* Reset to All */}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => applyRangePreset('all')}
+                  className="flex items-center gap-1 text-[11px] font-semibold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  <span>Reset Range</span>
+                </button>
+              </div>
+            </div>
+
+            {/* FULL-WIDTH DEDICATED CALCULATE BAR FOR MAXIMUM VISIBILITY */}
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={handleCalculateData}
+                disabled={isCalculating}
+                className="w-full py-3 px-5 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:to-teal-800 text-white font-bold text-sm rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50"
+              >
+                {isCalculating ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                    <span>Calculating data for you... Please wait</span>
+                  </>
+                ) : (
+                  <>
+                    <Calculator className="w-5 h-5 text-emerald-200" />
+                    <span>Calculate Data for Me · គណនាទិន្នន័យសម្រាប់ខ្ញុំ</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* CALCULATION STATUS & RESULTS BANNER */}
+          <div className="p-4 bg-emerald-50/90 border border-emerald-200/90 rounded-2xl text-xs text-emerald-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                <Sparkles className="w-4 h-4 text-white" />
+              </div>
+              <div>
+                <p className="font-bold text-slate-900 text-xs sm:text-sm flex items-center gap-2">
+                  <span>{calculationSummary}</span>
+                  {lastCalculatedInfo && (
+                    <span className="text-[10px] font-medium bg-emerald-200/80 text-emerald-900 px-2 py-0.5 rounded-full">
+                      Calculated at {lastCalculatedInfo.calculatedAt} (GMT+7)
+                    </span>
+                  )}
+                </p>
+                <p className="text-emerald-800 text-[11px] mt-0.5">
+                  Found <strong>{rangeMetrics.totalCount}</strong> transactions: <strong>+{formatMoney(rangeMetrics.income)}</strong> income ({rangeMetrics.countInc} entries) and <strong>-{formatMoney(rangeMetrics.expense)}</strong> expenses ({rangeMetrics.countExp} entries)
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+              <span className="text-[11px] font-mono text-emerald-800 font-bold bg-white px-2.5 py-1 rounded-lg border border-emerald-200">
+                Daun Penh (GMT+7)
+              </span>
+            </div>
+          </div>
+
+          {/* CALCULATED RESULTS CARDS */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {/* Selected Range Net Balance */}
+            <div className="bg-slate-900 text-white rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+              <div className="flex items-center justify-between text-xs text-slate-400">
+                <span className="font-semibold uppercase tracking-wider">Calculated Net Balance</span>
+                <span className="font-mono">{rangeMetrics.totalCount} entries</span>
+              </div>
+              <div className="my-2">
+                <div
+                  className={`text-2xl sm:text-3xl font-black tracking-tight ${
+                    rangeMetrics.net >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                  }`}
+                >
+                  {rangeMetrics.net < 0 ? '-' : ''}
+                  {formatMoney(Math.abs(rangeMetrics.net))}
+                </div>
+              </div>
+              <p className="text-[11px] text-slate-400">
+                Net cash flow for the selected date range
+              </p>
+            </div>
+
+            {/* Selected Range Income */}
+            <div className="bg-[#ecfdf5] border border-emerald-200/80 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+              <div className="flex items-center justify-between text-xs text-emerald-800">
+                <span className="font-semibold uppercase tracking-wider">Calculated Income</span>
+                <span className="font-bold bg-white px-2 py-0.5 rounded-md border border-emerald-200">
+                  {rangeMetrics.countInc} entries
+                </span>
+              </div>
+              <div className="my-2 text-2xl sm:text-3xl font-black text-emerald-700">
+                +{formatMoney(rangeMetrics.income)}
+              </div>
+              <p className="text-[11px] text-emerald-700">
+                {rangeMetrics.incomeRatio}% of cash flow in this period
+              </p>
+            </div>
+
+            {/* Selected Range Expenses */}
+            <div className="bg-[#fff1f2] border border-rose-200/80 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+              <div className="flex items-center justify-between text-xs text-rose-800">
+                <span className="font-semibold uppercase tracking-wider">Calculated Expenses</span>
+                <span className="font-bold bg-white px-2 py-0.5 rounded-md border border-rose-200">
+                  {rangeMetrics.countExp} entries
+                </span>
+              </div>
+              <div className="my-2 text-2xl sm:text-3xl font-black text-rose-700">
+                -{formatMoney(rangeMetrics.expense)}
+              </div>
+              <p className="text-[11px] text-rose-700">
+                {rangeMetrics.expenseRatio}% of cash flow in this period
+              </p>
+            </div>
+          </div>
+
+          {/* CATEGORIES BREAKDOWN & TRANSACTIONS IN SELECTED RANGE */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start pt-1">
+            
+            {/* Top Categories in this Range (5 cols) */}
+            <div className="lg:col-span-5 bg-slate-50 rounded-2xl p-5 border border-slate-200 space-y-3">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-200">
+                <h4 className="font-bold text-xs text-slate-900 uppercase tracking-wider">
+                  Spending by Category in Range
+                </h4>
+                <span className="text-[11px] text-slate-400">Ranked</span>
+              </div>
+
+              {rangeMetrics.topExpenseCategories.length === 0 ? (
+                <div className="py-6 text-center text-slate-400 text-xs">
+                  No expense records in this date range.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {rangeMetrics.topExpenseCategories.map((cat) => {
+                    const pct = rangeMetrics.expense > 0 ? Math.round((cat.total / rangeMetrics.expense) * 100) : 0;
+                    return (
+                      <div key={cat.name} className="space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-semibold text-slate-700">{cat.name}</span>
+                          <span className="font-mono text-slate-900">
+                            <strong>{formatMoney(cat.total)}</strong>{' '}
+                            <span className="text-slate-400 font-normal">({pct}%)</span>
+                          </span>
+                        </div>
+                        <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-slate-800 rounded-full"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Transactions in Range Table (7 cols) */}
+            <div className="lg:col-span-7 bg-white rounded-2xl p-5 border border-slate-200 space-y-3">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                <h4 className="font-bold text-xs text-slate-900 uppercase tracking-wider">
+                  Calculated Transactions List ({rangeFilteredTransactions.length})
+                </h4>
+                <span className="text-[11px] text-slate-400 font-mono">
+                  {calcStartDate || 'All'} → {calcEndDate || 'Today'}
+                </span>
+              </div>
+
+              <div className="overflow-x-auto max-h-72 overflow-y-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="sticky top-0 bg-white">
+                    <tr className="text-slate-400 border-b border-slate-100 font-semibold">
+                      <th className="pb-2 px-2">Date</th>
+                      <th className="pb-2 px-2">Type</th>
+                      <th className="pb-2 px-2">Category</th>
+                      <th className="pb-2 px-2">Note</th>
+                      <th className="pb-2 px-2 text-right">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {rangeFilteredTransactions.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="py-8 text-center text-slate-400">
+                          No transactions found for the selected date range.
+                        </td>
+                      </tr>
+                    ) : (
+                      rangeFilteredTransactions.map((tx) => {
+                        const isInc = tx.type === 'Income';
+                        const dt = formatToDaunPenhDisplay(tx.date, tx.timestamp, tx.time);
+                        return (
+                          <tr key={tx.id} className="hover:bg-slate-50 transition-colors">
+                            <td className="py-2.5 px-2 font-mono text-slate-600 whitespace-nowrap">
+                              {dt.dayMonthYear}
+                            </td>
+                            <td className="py-2.5 px-2 whitespace-nowrap">
+                              <span className={`font-semibold ${isInc ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                {isInc ? '↑' : '↓'} {tx.type}
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-2 font-medium text-slate-800 whitespace-nowrap">
+                              {tx.category}
+                            </td>
+                            <td className="py-2.5 px-2 text-slate-500 max-w-[150px] truncate">
+                              {tx.note || '—'}
+                            </td>
+                            <td
+                              className={`py-2.5 px-2 text-right font-mono font-bold whitespace-nowrap ${
+                                isInc ? 'text-emerald-600' : 'text-slate-900'
+                              }`}
+                            >
+                              {isInc ? '+' : '-'}{formatMoney(Number(tx.amount))}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </main>
+
+      {/* MODAL: APPS SCRIPT CODE & SETTINGS */}
       {isScriptModalOpen && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-7 shadow-2xl border border-slate-100 max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-              <div>
-                <h3 className="font-bold text-base text-slate-900">Google Apps Script Setup</h3>
-                <p className="text-xs text-slate-400">Step-by-step instructions for your sheet</p>
+          <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-slate-900 text-white flex items-center justify-center">
+                  <Code2 className="w-4 h-4 text-emerald-400" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-slate-900">Google Apps Script & Web App URL</h3>
+                  <p className="text-xs text-slate-500">Configured with Daun Penh (GMT+7) timezone</p>
+                </div>
               </div>
-              <button onClick={() => setIsScriptModalOpen(false)} className="text-slate-400 hover:text-slate-600">
-                <X className="w-5 h-5" />
+              <button
+                onClick={() => setIsScriptModalOpen(false)}
+                className="p-1.5 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4 text-slate-500" />
               </button>
             </div>
 
-            <div className="overflow-y-auto flex-1 space-y-4 pr-1 text-xs text-slate-600">
-              <ol className="list-decimal list-inside space-y-1.5 bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80">
-                <li>
-                  Open your Google Sheet:{' '}
-                  <a
-                    href={`https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/edit`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-emerald-700 underline font-semibold"
-                  >
-                    Open Sheet
-                  </a>
-                </li>
-                <li>
-                  Click <strong>Extensions &gt; Apps Script</strong>.
-                </li>
-                <li>
-                  Paste the script below into <code>Code.gs</code>.
-                </li>
-                <li>
-                  Click <strong>Deploy &gt; New deployment</strong> &gt; Select <strong>Web app</strong>.
-                </li>
-                <li>
-                  Set <strong>Execute as: Me</strong> and <strong>Who has access: Anyone</strong> (required!).
-                </li>
-                <li>Click <strong>Deploy</strong>, grant permissions, and copy the Web App URL.</li>
-              </ol>
+            <div className="p-6 overflow-y-auto space-y-6 text-xs text-slate-600">
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                <h4 className="font-bold text-slate-800 text-sm mb-2">Web App URL</h4>
+                <p className="text-slate-500 mb-3 text-xs">
+                  Paste the deployment URL from Google Apps Script below:
+                </p>
+                <form onSubmit={handleSaveUrl} className="space-y-3">
+                  <input
+                    type="url"
+                    required
+                    placeholder="https://script.google.com/macros/s/.../exec"
+                    value={inputUrl}
+                    onChange={(e) => setInputUrl(e.target.value)}
+                    className="w-full px-3.5 py-2.5 text-xs bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 font-mono"
+                  />
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-slate-400">
+                      Must end with <code className="font-bold text-slate-600">/exec</code>
+                    </span>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer"
+                    >
+                      Save & Re-sync
+                    </button>
+                  </div>
+                </form>
+              </div>
 
               <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="font-bold text-slate-800">Apps Script Backend Code:</span>
+                <h4 className="font-bold text-slate-900 text-sm mb-2">How to Deploy in 4 Easy Steps:</h4>
+                <ol className="list-decimal pl-5 space-y-2 text-slate-600 leading-relaxed">
+                  <li>
+                    Open your Google Sheet:{' '}
+                    <a
+                      href={`https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/edit`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-emerald-700 font-semibold underline"
+                    >
+                      Open Google Sheet ↗
+                    </a>
+                  </li>
+                  <li>Click <strong>Extensions &gt; Apps Script</strong> in the Google Sheet top menu.</li>
+                  <li>Paste the code below, replacing all existing code in <code>Code.gs</code>.</li>
+                  <li>
+                    Click blue <strong>Deploy &gt; New deployment</strong>, select <strong>Web app</strong>, set{' '}
+                    <strong>Who has access: Anyone</strong>, click Deploy, and copy the Web App URL!
+                  </li>
+                </ol>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-bold text-slate-900">Google Apps Script Code (Code.gs)</span>
                   <button
-                    onClick={copyScript}
-                    className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-semibold rounded-lg transition-colors cursor-pointer"
+                    onClick={() => {
+                      navigator.clipboard.writeText(appsScriptCode);
+                      setHasCopiedCode(true);
+                      setTimeout(() => setHasCopiedCode(false), 2500);
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-xl font-bold text-xs text-slate-700 transition-colors cursor-pointer"
                   >
-                    {hasCopiedCode ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>{hasCopiedCode ? 'Copied' : 'Copy Code'}</span>
+                    {hasCopiedCode ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{hasCopiedCode ? 'Copied!' : 'Copy Code'}</span>
                   </button>
                 </div>
-                <pre className="bg-slate-900 text-slate-100 p-4 rounded-2xl text-[11px] font-mono overflow-x-auto max-h-56 leading-relaxed select-all">
+                <pre className="bg-slate-900 text-slate-100 p-4 rounded-2xl overflow-x-auto text-[11px] font-mono leading-relaxed max-h-56">
                   {appsScriptCode}
                 </pre>
               </div>
             </div>
 
-            <div className="pt-4 border-t border-slate-100 flex items-center justify-end">
+            <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end">
               <button
                 onClick={() => setIsScriptModalOpen(false)}
-                className="px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl cursor-pointer"
+                className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl cursor-pointer"
               >
                 Close
               </button>

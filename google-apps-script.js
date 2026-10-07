@@ -26,6 +26,7 @@
 const SPREADSHEET_ID = "1748vpezYkZU7ZflHUHgNvdefcswgm7bpAN-WS8MrumM";
 const SHEET_DATA_NAME = "Data";
 const SHEET_SETTINGS_NAME = "Settings";
+const TIMEZONE = "Asia/Phnom_Penh"; // Daun Penh, Phnom Penh, Cambodia (GMT+7)
 
 /**
  * Handle HTTP GET Requests
@@ -80,14 +81,14 @@ function doGet(e) {
 
         let formattedTimestamp = "";
         if (row[0] instanceof Date) {
-          formattedTimestamp = Utilities.formatDate(row[0], Session.getScriptTimeZone() || "GMT", "yyyy-MM-dd HH:mm:ss");
+          formattedTimestamp = Utilities.formatDate(row[0], TIMEZONE, "yyyy-MM-dd HH:mm:ss");
         } else {
           formattedTimestamp = String(row[0] || "");
         }
 
         let formattedDate = "";
         if (row[1] instanceof Date) {
-          formattedDate = Utilities.formatDate(row[1], Session.getScriptTimeZone() || "GMT", "yyyy-MM-dd");
+          formattedDate = Utilities.formatDate(row[1], TIMEZONE, "yyyy-MM-dd");
         } else {
           formattedDate = String(row[1] || "");
         }
@@ -160,7 +161,7 @@ function doPost(e) {
  * Helper to validate and add a transaction to the Data tab
  */
 function handleAddRecord(ss, data) {
-  const date = data.date || Utilities.formatDate(new Date(), Session.getScriptTimeZone() || "GMT", "yyyy-MM-dd");
+  const date = data.date || Utilities.formatDate(new Date(), TIMEZONE, "yyyy-MM-dd");
   const type = (data.type && String(data.type).toLowerCase() === "income") ? "Income" : "Expense";
   const category = String(data.category || (type === "Income" ? "Other Income" : "Other Expense")).trim();
   const amount = parseFloat(data.amount);
@@ -175,11 +176,11 @@ function handleAddRecord(ss, data) {
 
   const dataSheet = ss.getSheetByName(SHEET_DATA_NAME);
   const now = new Date();
-  const formattedTimestamp = Utilities.formatDate(now, Session.getScriptTimeZone() || "GMT", "yyyy-MM-dd HH:mm:ss");
+  const formattedTimestamp = data.timestamp || Utilities.formatDate(now, TIMEZONE, "yyyy-MM-dd HH:mm:ss");
 
   // Columns: Timestamp, Date, Type, Category, Amount, Note
   dataSheet.appendRow([
-    now,
+    formattedTimestamp,
     date,
     type,
     category,
