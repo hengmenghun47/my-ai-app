@@ -1047,7 +1047,7 @@ function ensureSheetsInitialized(ss) {
             <div>
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-moul text-sm sm:text-base text-slate-900 dark:text-white leading-normal pt-0.5 tracking-normal">
-                  កម្មវិធីចំណូលចំណាយប្រចាំខែ
+                  កម្មវិធីកត់ត្រាចំណូលចំណាយប្រចាំខែ
                 </span>
                 <span
                   className={`text-[10px] font-semibold px-2 py-0.5 rounded-md border shrink-0 ${
