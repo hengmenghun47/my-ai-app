@@ -6,6 +6,11 @@
   <title>Income & Expense Tracker - Google Sheets Synced</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class'
+    };
+  </script>
   <!-- Lucide Icons CDN -->
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
@@ -13,36 +18,42 @@
     body { font-family: 'Plus Jakarta Sans', sans-serif; }
   </style>
 </head>
-<body class="bg-[#f8fafc] text-slate-800 min-h-screen flex flex-col font-sans selection:bg-emerald-100">
+<body class="bg-[#f8fafc] dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col font-sans selection:bg-emerald-100 dark:selection:bg-emerald-950 transition-colors duration-200">
 
   <!-- TOP HEADER (No KHR button) -->
-  <header class="bg-white border-b border-slate-200/80 sticky top-0 z-30 shadow-xs">
+  <header class="bg-white dark:bg-slate-900 border-b border-slate-200/80 dark:border-slate-800 sticky top-0 z-30 shadow-xs transition-colors duration-200">
     <div class="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
       <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold shadow-xs">
+        <div class="w-9 h-9 rounded-xl bg-slate-900 dark:bg-slate-800 text-white flex items-center justify-center font-bold shadow-xs border border-slate-800 dark:border-slate-700">
           <i data-lucide="wallet" class="w-5 h-5 text-emerald-400"></i>
         </div>
         <div>
           <div class="flex items-center gap-2">
-            <span class="font-extrabold text-base tracking-tight text-slate-900">Income & Expense Tracker</span>
-            <span id="syncBadge" class="text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.2 rounded-md">
+            <span class="font-extrabold text-base tracking-tight text-slate-900 dark:text-white">Income & Expense Tracker</span>
+            <span id="syncBadge" class="text-[10px] font-semibold bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 px-2 py-0.2 rounded-md">
               Google Sheet Synced
             </span>
           </div>
-          <p class="text-[11px] text-slate-400 hidden sm:block">
-            Sheet ID: <code class="font-mono text-slate-600 font-semibold">1748vpezYkZU7ZflHUHgNvdefcswgm7bpAN-WS8MrumM</code>
+          <p class="text-[11px] text-slate-400 dark:text-slate-500 hidden sm:block">
+            Sheet ID: <code class="font-mono text-slate-600 dark:text-slate-400 font-semibold">1748vpezYkZU7ZflHUHgNvdefcswgm7bpAN-WS8MrumM</code>
           </p>
         </div>
       </div>
 
-      <div class="flex items-center gap-2.5">
+      <div class="flex items-center gap-2 sm:gap-2.5">
+        <!-- Theme Toggle Button -->
+        <button id="btnToggleTheme" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl border transition-all duration-200 cursor-pointer bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 shadow-xs" title="Toggle Light / Dark Theme">
+          <i data-lucide="moon" class="w-4 h-4 text-indigo-500" id="themeIcon"></i>
+          <span id="themeText" class="font-semibold text-slate-700 dark:text-slate-200">Dark</span>
+        </button>
+
         <!-- Sync Button -->
-        <button id="btnRefresh" class="p-2 text-slate-600 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition-colors cursor-pointer" title="Sync Sheet">
+        <button id="btnRefresh" class="p-2 text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-xl transition-colors cursor-pointer" title="Sync Sheet">
           <i data-lucide="refresh-cw" class="w-4 h-4" id="refreshIcon"></i>
         </button>
 
         <!-- Settings Button -->
-        <button id="btnConfig" class="p-2 text-slate-600 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition-colors cursor-pointer" title="Settings">
+        <button id="btnConfig" class="p-2 text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-xl transition-colors cursor-pointer" title="Settings">
           <i data-lucide="code-2" class="w-4 h-4"></i>
         </button>
       </div>
@@ -53,43 +64,43 @@
   <main class="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 flex-1 w-full space-y-6">
 
     <!-- 1. TOP NET BALANCE HERO CARD -->
-    <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-sm">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200/90 dark:border-slate-800 shadow-sm transition-colors duration-200">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div>
-          <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1">
+          <span class="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">
             NET BALANCE · សមតុល្យសរុប
           </span>
-          <div id="netBalanceDisplay" class="text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-900">
+          <div id="netBalanceDisplay" class="text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white">
             $625.00
           </div>
-          <p id="txCountDisplay" class="text-xs text-slate-400 mt-1.5 flex items-center gap-1.5">
+          <p id="txCountDisplay" class="text-xs text-slate-400 dark:text-slate-500 mt-1.5 flex items-center gap-1.5">
             Based on 7 transactions in your Google Sheet
           </p>
         </div>
 
         <div class="flex items-center gap-3 sm:gap-4">
           <!-- Income Card -->
-          <div class="bg-[#ecfdf5] border border-emerald-200/80 rounded-2xl p-4 min-w-[150px] sm:min-w-[170px]">
-            <div class="flex items-center gap-1.5 text-emerald-700 text-xs font-semibold mb-1">
+          <div class="bg-[#ecfdf5] dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-800/60 rounded-2xl p-4 min-w-[150px] sm:min-w-[170px] transition-colors">
+            <div class="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400 text-xs font-semibold mb-1">
               <div class="w-5 h-5 rounded-md bg-emerald-600 text-white flex items-center justify-center shadow-xs">
                 <i data-lucide="arrow-down-left" class="w-3.5 h-3.5"></i>
               </div>
               <span>Income · ចំណូល</span>
             </div>
-            <div id="totalIncomeDisplay" class="text-xl sm:text-2xl font-bold text-emerald-700">+$760.00</div>
-            <div id="incCountDisplay" class="text-xs text-emerald-600 mt-0.5">4 entries</div>
+            <div id="totalIncomeDisplay" class="text-xl sm:text-2xl font-bold text-emerald-700 dark:text-emerald-400">+$760.00</div>
+            <div id="incCountDisplay" class="text-xs text-emerald-600 dark:text-emerald-400/80 mt-0.5">4 entries</div>
           </div>
 
           <!-- Expense Card -->
-          <div class="bg-[#fff1f2] border border-rose-200/80 rounded-2xl p-4 min-w-[150px] sm:min-w-[170px]">
-            <div class="flex items-center gap-1.5 text-rose-700 text-xs font-semibold mb-1">
+          <div class="bg-[#fff1f2] dark:bg-rose-950/30 border border-rose-200/80 dark:border-rose-800/60 rounded-2xl p-4 min-w-[150px] sm:min-w-[170px] transition-colors">
+            <div class="flex items-center gap-1.5 text-rose-700 dark:text-rose-400 text-xs font-semibold mb-1">
               <div class="w-5 h-5 rounded-md bg-rose-600 text-white flex items-center justify-center shadow-xs">
                 <i data-lucide="arrow-up-right" class="w-3.5 h-3.5"></i>
               </div>
               <span>Expense · ចំណាយ</span>
             </div>
-            <div id="totalExpenseDisplay" class="text-xl sm:text-2xl font-bold text-rose-700">-$135.00</div>
-            <div id="expCountDisplay" class="text-xs text-rose-600 mt-0.5">3 entries</div>
+            <div id="totalExpenseDisplay" class="text-xl sm:text-2xl font-bold text-rose-700 dark:text-rose-400">-$135.00</div>
+            <div id="expCountDisplay" class="text-xs text-rose-600 dark:text-rose-400/80 mt-0.5">3 entries</div>
           </div>
         </div>
       </div>
@@ -99,25 +110,25 @@
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
       
       <!-- ADD TRANSACTION (5 cols) -->
-      <div class="lg:col-span-5 bg-white rounded-3xl p-6 border border-slate-200/90 shadow-sm">
-        <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+      <div class="lg:col-span-5 bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200/90 dark:border-slate-800 shadow-sm transition-colors duration-200">
+        <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100 dark:border-slate-800">
           <div>
-            <h2 class="font-bold text-base text-slate-900">Add Transaction</h2>
+            <h2 class="font-bold text-base text-slate-900 dark:text-white">Add Transaction</h2>
             <p class="text-xs text-slate-400">បញ្ចូលចំណូល ឬ ចំណាយ</p>
           </div>
-          <span class="text-xs font-mono font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">
+          <span class="text-xs font-mono font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">
             $ USD
           </span>
         </div>
 
         <form id="txForm" class="space-y-4">
           <!-- Type Switcher -->
-          <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-2xl">
+          <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl">
             <button type="button" id="btnTypeExpense" class="py-2.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 bg-[#e11d48] text-white shadow-xs cursor-pointer">
               <i data-lucide="arrow-up-right" class="w-3.5 h-3.5"></i>
               Expense (ចំណាយ)
             </button>
-            <button type="button" id="btnTypeIncome" class="py-2.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 text-slate-600 hover:text-slate-900 cursor-pointer">
+            <button type="button" id="btnTypeIncome" class="py-2.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer">
               <i data-lucide="arrow-down-left" class="w-3.5 h-3.5"></i>
               Income (ចំណូល)
             </button>
@@ -126,33 +137,33 @@
 
           <!-- Amount -->
           <div>
-            <label class="block text-xs font-semibold text-slate-500 mb-1">
+            <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
               Amount · ចំនួនទឹកប្រាក់ ($)
             </label>
             <div class="relative">
               <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 font-bold text-base">$</span>
-              <input type="number" step="0.01" min="0.01" required placeholder="0.00" id="txAmount" class="w-full pl-9 pr-4 py-3 text-base font-bold bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-900" />
+              <input type="number" step="0.01" min="0.01" required placeholder="0.00" id="txAmount" class="w-full pl-9 pr-4 py-3 text-base font-bold bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-emerald-500 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 transition-colors" />
             </div>
             <!-- Quick Chips -->
             <div class="flex items-center gap-1.5 mt-2 text-xs flex-wrap">
               <span class="text-[11px] text-slate-400">Quick:</span>
-              <button type="button" class="quick-chip px-2 py-0.5 bg-slate-100 hover:bg-slate-200 rounded-md text-[11px] font-mono text-slate-700 cursor-pointer" data-val="5">+$5</button>
-              <button type="button" class="quick-chip px-2 py-0.5 bg-slate-100 hover:bg-slate-200 rounded-md text-[11px] font-mono text-slate-700 cursor-pointer" data-val="10">+$10</button>
-              <button type="button" class="quick-chip px-2 py-0.5 bg-slate-100 hover:bg-slate-200 rounded-md text-[11px] font-mono text-slate-700 cursor-pointer" data-val="20">+$20</button>
-              <button type="button" class="quick-chip px-2 py-0.5 bg-slate-100 hover:bg-slate-200 rounded-md text-[11px] font-mono text-slate-700 cursor-pointer" data-val="50">+$50</button>
-              <button type="button" class="quick-chip px-2 py-0.5 bg-slate-100 hover:bg-slate-200 rounded-md text-[11px] font-mono text-slate-700 cursor-pointer" data-val="100">+$100</button>
+              <button type="button" class="quick-chip px-2 py-0.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-md text-[11px] font-mono text-slate-700 dark:text-slate-300 cursor-pointer" data-val="5">+$5</button>
+              <button type="button" class="quick-chip px-2 py-0.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-md text-[11px] font-mono text-slate-700 dark:text-slate-300 cursor-pointer" data-val="10">+$10</button>
+              <button type="button" class="quick-chip px-2 py-0.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-md text-[11px] font-mono text-slate-700 dark:text-slate-300 cursor-pointer" data-val="20">+$20</button>
+              <button type="button" class="quick-chip px-2 py-0.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-md text-[11px] font-mono text-slate-700 dark:text-slate-300 cursor-pointer" data-val="50">+$50</button>
+              <button type="button" class="quick-chip px-2 py-0.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-md text-[11px] font-mono text-slate-700 dark:text-slate-300 cursor-pointer" data-val="100">+$100</button>
             </div>
           </div>
 
           <!-- Date & Category -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label class="block text-xs font-semibold text-slate-500 mb-1">Date · កាលបរិច្ឆេទ</label>
-              <input type="date" required id="txDate" class="w-full px-3 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 font-mono text-slate-800" />
+              <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Date · កាលបរិច្ឆេទ</label>
+              <input type="date" required id="txDate" class="w-full px-3 py-2.5 text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-emerald-500 font-mono text-slate-800 dark:text-slate-100" />
             </div>
             <div>
-              <label class="block text-xs font-semibold text-slate-500 mb-1">Category · ប្រភេទ</label>
-              <select required id="txCategory" class="w-full px-3 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 text-slate-800 truncate">
+              <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Category · ប្រភេទ</label>
+              <select required id="txCategory" class="w-full px-3 py-2.5 text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-emerald-500 text-slate-800 dark:text-slate-100 truncate">
                 <option value="Transportation">Transportation</option>
                 <option value="Health & Wellness">Health & Wellness</option>
                 <option value="Housing & Utilities">Housing & Utilities</option>
@@ -164,12 +175,12 @@
 
           <!-- Note (Pure text, NO $ sign!) -->
           <div>
-            <label class="block text-xs font-semibold text-slate-500 mb-1">Note / Description · ចំណាំ</label>
-            <input type="text" placeholder="e.g. Lunch with team, Fuel, Internet..." id="txNote" class="w-full px-3.5 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900" />
+            <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Note / Description · ចំណាំ</label>
+            <input type="text" placeholder="e.g. Lunch with team, Fuel, Internet..." id="txNote" class="w-full px-3.5 py-2.5 text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-emerald-500 text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500" />
           </div>
 
           <!-- Submit Button -->
-          <button type="submit" id="btnSubmitTx" class="w-full py-3.5 px-4 bg-[#0f172a] hover:bg-slate-800 text-white font-bold text-xs rounded-2xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50">
+          <button type="submit" id="btnSubmitTx" class="w-full py-3.5 px-4 bg-[#0f172a] hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-bold text-xs rounded-2xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50">
             <i data-lucide="plus" class="w-4 h-4 text-white stroke-[2.5]"></i>
             <span id="submitBtnText">+ Save Expense Entry</span>
           </button>
@@ -180,29 +191,29 @@
       <div class="lg:col-span-7 space-y-6">
         
         <!-- Cash Flow Ratio -->
-        <div class="bg-white rounded-3xl p-6 border border-slate-200/90 shadow-sm">
-          <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
-            <h3 class="font-bold text-sm text-slate-900">Cash Flow Ratio</h3>
+        <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200/90 dark:border-slate-800 shadow-sm transition-colors duration-200">
+          <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100 dark:border-slate-800">
+            <h3 class="font-bold text-sm text-slate-900 dark:text-white">Cash Flow Ratio</h3>
             <span class="text-xs text-slate-400">ចំណូល vs ចំណាយ</span>
           </div>
 
           <div class="space-y-4">
             <div>
               <div class="flex justify-between text-xs font-semibold mb-1">
-                <span class="text-emerald-700">Income (<span id="ratioIncomeAmt">+$760.00</span>)</span>
+                <span class="text-emerald-700 dark:text-emerald-400">Income (<span id="ratioIncomeAmt">+$760.00</span>)</span>
                 <span id="ratioIncomeDisplay" class="text-slate-400 font-mono">85%</span>
               </div>
-              <div class="h-3.5 w-full bg-slate-100 rounded-full overflow-hidden">
+              <div class="h-3.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                 <div id="ratioIncomeBar" class="h-full bg-[#10b981] rounded-full transition-all duration-500" style="width: 85%"></div>
               </div>
             </div>
 
             <div>
               <div class="flex justify-between text-xs font-semibold mb-1">
-                <span class="text-rose-700">Expenses (<span id="ratioExpenseAmt">-$135.00</span>)</span>
+                <span class="text-rose-700 dark:text-rose-400">Expenses (<span id="ratioExpenseAmt">-$135.00</span>)</span>
                 <span id="ratioExpenseDisplay" class="text-slate-400 font-mono">15%</span>
               </div>
-              <div class="h-3.5 w-full bg-slate-100 rounded-full overflow-hidden">
+              <div class="h-3.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                 <div id="ratioExpenseBar" class="h-full bg-[#f43f5e] rounded-full transition-all duration-500" style="width: 15%"></div>
               </div>
             </div>
@@ -210,9 +221,9 @@
         </div>
 
         <!-- Top Expense Categories -->
-        <div class="bg-white rounded-3xl p-6 border border-slate-200/90 shadow-sm">
-          <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
-            <h3 class="font-bold text-sm text-slate-900">Top Expense Categories · ការចំណាយតាមប្រភេទ</h3>
+        <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200/90 dark:border-slate-800 shadow-sm transition-colors duration-200">
+          <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100 dark:border-slate-800">
+            <h3 class="font-bold text-sm text-slate-900 dark:text-white">Top Expense Categories · ការចំណាយតាមប្រភេទ</h3>
             <span class="text-xs text-slate-400">Ranked</span>
           </div>
 
@@ -226,20 +237,20 @@
     </div>
 
     <!-- 3. TRANSACTION HISTORY TABLE -->
-    <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-sm">
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 mb-4 border-b border-slate-100">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200/90 dark:border-slate-800 shadow-sm transition-colors duration-200">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 mb-4 border-b border-slate-100 dark:border-slate-800">
         <div>
-          <h2 class="font-bold text-base text-slate-900">Transaction History · ប្រវត្តិប្រតិបត្តិការ</h2>
+          <h2 class="font-bold text-base text-slate-900 dark:text-white">Transaction History · ប្រវត្តិប្រតិបត្តិការ</h2>
           <p class="text-xs text-slate-400">Synced directly with Google Sheet "Data" tab</p>
         </div>
 
         <div class="flex items-center gap-2">
-          <div class="flex items-center gap-1 p-1 bg-slate-100 rounded-xl text-xs font-semibold">
-            <button class="filter-btn px-3 py-1 rounded-lg transition-all cursor-pointer bg-white text-slate-900 shadow-xs" data-filter="all">All</button>
-            <button class="filter-btn px-3 py-1 rounded-lg transition-all cursor-pointer text-slate-500 hover:text-slate-900" data-filter="Expense">Expense</button>
-            <button class="filter-btn px-3 py-1 rounded-lg transition-all cursor-pointer text-slate-500 hover:text-slate-900" data-filter="Income">Income</button>
+          <div class="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs font-semibold">
+            <button class="filter-btn px-3 py-1 rounded-lg transition-all cursor-pointer bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs" data-filter="all">All</button>
+            <button class="filter-btn px-3 py-1 rounded-lg transition-all cursor-pointer text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white" data-filter="Expense">Expense</button>
+            <button class="filter-btn px-3 py-1 rounded-lg transition-all cursor-pointer text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white" data-filter="Income">Income</button>
           </div>
-          <button id="btnExportCSV" class="p-1.5 text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer" title="Export CSV">
+          <button id="btnExportCSV" class="p-1.5 text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl transition-colors cursor-pointer" title="Export CSV">
             <i data-lucide="download" class="w-4 h-4"></i>
           </button>
         </div>
@@ -248,21 +259,21 @@
       <!-- Search Box -->
       <div class="relative mb-4">
         <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
-        <input type="text" placeholder="Search by note, category, or date..." id="searchInput" class="w-full pl-9 pr-4 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-slate-900" />
+        <input type="text" placeholder="Search by note, category, or date..." id="searchInput" class="w-full pl-9 pr-4 py-2 text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-1 focus:ring-slate-900 dark:focus:ring-emerald-500 text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500" />
       </div>
 
       <div class="overflow-x-auto">
         <table class="w-full text-left text-xs">
           <thead>
-            <tr class="text-slate-400 border-b border-slate-100 font-semibold">
-              <th class="pb-2.5 px-3">Date</th>
-              <th class="pb-2.5 px-3">Type</th>
-              <th class="pb-2.5 px-3">Category</th>
-              <th class="pb-2.5 px-3">Note</th>
-              <th class="pb-2.5 px-3 text-right">Amount</th>
+            <tr class="text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800 font-semibold">
+              <th className="pb-2.5 px-3">Date</th>
+              <th className="pb-2.5 px-3">Type</th>
+              <th className="pb-2.5 px-3">Category</th>
+              <th className="pb-2.5 px-3">Note</th>
+              <th className="pb-2.5 px-3 text-right">Amount</th>
             </tr>
           </thead>
-          <tbody id="recordsTableBody" class="divide-y divide-slate-100">
+          <tbody id="recordsTableBody" class="divide-y divide-slate-100 dark:divide-slate-800">
             <!-- Populated via JS -->
           </tbody>
         </table>
@@ -270,14 +281,14 @@
     </div>
 
     <!-- 4. DATE RANGE CALCULATOR CARD (FROM ... TO ...) -->
-    <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-sm space-y-6">
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200/90 dark:border-slate-800 shadow-sm space-y-6 transition-colors duration-200">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-2xl bg-slate-900 text-white flex items-center justify-center font-bold shadow-xs">
+          <div class="w-10 h-10 rounded-2xl bg-slate-900 dark:bg-slate-800 text-white flex items-center justify-center font-bold shadow-xs border border-slate-800 dark:border-slate-700">
             <i data-lucide="calculator" class="w-5 h-5 text-emerald-400"></i>
           </div>
           <div>
-            <h2 class="font-bold text-base text-slate-900 flex items-center gap-2">
+            <h2 class="font-bold text-base text-slate-900 dark:text-white flex items-center gap-2">
               <span>Calculate by Selected Date</span>
               <span class="text-xs font-normal text-slate-400">· គណនាតាមកាលបរិច្ឆេទ</span>
             </h2>
@@ -287,48 +298,48 @@
           </div>
         </div>
 
-        <button id="btnExportRange" class="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer self-start sm:self-auto">
+        <button id="btnExportRange" class="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:text-slate-900 dark:text-slate-200 dark:hover:text-white bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl transition-colors cursor-pointer self-start sm:self-auto">
           <i data-lucide="download" class="w-3.5 h-3.5"></i>
           <span>Export Selected Range</span>
         </button>
       </div>
 
       <!-- Date Range Controls -->
-      <div class="bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200 space-y-4">
+      <div class="bg-slate-50 dark:bg-slate-800/50 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-4">
         <div class="grid grid-cols-1 sm:grid-cols-12 gap-3.5 items-end">
           <div class="sm:col-span-4">
-            <label class="block text-xs font-semibold text-slate-600 mb-1">From Date · ចាប់ពីកាលបរិច្ឆេទ</label>
-            <input type="date" id="calcStartDate" class="w-full px-3.5 py-2.5 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 font-mono text-slate-800" />
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">From Date · ចាប់ពីកាលបរិច្ឆេទ</label>
+            <input type="date" id="calcStartDate" class="w-full px-3.5 py-2.5 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-emerald-500 font-mono text-slate-800 dark:text-slate-100" />
           </div>
           <div class="sm:col-span-4">
-            <label class="block text-xs font-semibold text-slate-600 mb-1">To Date · ដល់កាលបរិច្ឆេទ</label>
-            <input type="date" id="calcEndDate" class="w-full px-3.5 py-2.5 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 font-mono text-slate-800" />
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">To Date · ដល់កាលបរិច្ឆេទ</label>
+            <input type="date" id="calcEndDate" class="w-full px-3.5 py-2.5 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-emerald-500 font-mono text-slate-800 dark:text-slate-100" />
           </div>
           <div class="sm:col-span-4">
-            <label class="block text-xs font-semibold text-slate-600 mb-1">Type · ប្រភេទ</label>
-            <div class="flex items-center p-1 bg-white border border-slate-200 rounded-xl text-xs font-semibold gap-1.5 shadow-2xs">
-              <button type="button" class="calc-type-btn flex-1 py-2 px-3 rounded-lg text-center transition-all cursor-pointer text-xs font-semibold whitespace-nowrap bg-slate-900 text-white shadow-xs" data-type="All">All</button>
-              <button type="button" class="calc-type-btn flex-1 py-2 px-3 rounded-lg text-center transition-all cursor-pointer text-xs font-semibold whitespace-nowrap text-slate-600 hover:text-slate-900 hover:bg-slate-100" data-type="Income">Income</button>
-              <button type="button" class="calc-type-btn flex-1 py-2 px-3 rounded-lg text-center transition-all cursor-pointer text-xs font-semibold whitespace-nowrap text-slate-600 hover:text-slate-900 hover:bg-slate-100" data-type="Expense">Expense</button>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Type · ប្រភេទ</label>
+            <div class="flex items-center p-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold gap-1.5 shadow-2xs">
+              <button type="button" class="calc-type-btn flex-1 py-2 px-3 rounded-lg text-center transition-all cursor-pointer text-xs font-semibold whitespace-nowrap bg-slate-900 dark:bg-emerald-600 text-white shadow-xs" data-type="All">All</button>
+              <button type="button" class="calc-type-btn flex-1 py-2 px-3 rounded-lg text-center transition-all cursor-pointer text-xs font-semibold whitespace-nowrap text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800" data-type="Income">Income</button>
+              <button type="button" class="calc-type-btn flex-1 py-2 px-3 rounded-lg text-center transition-all cursor-pointer text-xs font-semibold whitespace-nowrap text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800" data-type="Expense">Expense</button>
             </div>
           </div>
         </div>
 
         <!-- Quick Presets -->
-        <div class="flex items-center justify-between flex-wrap gap-2 pt-2 border-t border-slate-200/70 text-xs">
+        <div class="flex items-center justify-between flex-wrap gap-2 pt-2 border-t border-slate-200/70 dark:border-slate-700 text-xs">
           <div class="flex items-center gap-1.5 flex-wrap">
             <span class="text-[11px] font-semibold text-slate-400">Quick:</span>
-            <button type="button" class="preset-btn px-2.5 py-1 bg-white hover:bg-slate-200 border border-slate-200 rounded-lg text-[11px] text-slate-700 cursor-pointer font-medium" data-preset="today">Today</button>
-            <button type="button" class="preset-btn px-2.5 py-1 bg-white hover:bg-slate-200 border border-slate-200 rounded-lg text-[11px] text-slate-700 cursor-pointer font-medium" data-preset="this_month">This Month</button>
-            <button type="button" class="preset-btn px-2.5 py-1 bg-white hover:bg-slate-200 border border-slate-200 rounded-lg text-[11px] text-slate-700 cursor-pointer font-medium" data-preset="last_30">Last 30 Days</button>
-            <button type="button" class="preset-btn px-2.5 py-1 bg-white hover:bg-slate-200 border border-slate-200 rounded-lg text-[11px] text-slate-700 cursor-pointer font-medium" data-preset="all">All Time</button>
+            <button type="button" class="preset-btn px-2.5 py-1 bg-white dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-[11px] text-slate-700 dark:text-slate-300 cursor-pointer font-medium" data-preset="today">Today</button>
+            <button type="button" class="preset-btn px-2.5 py-1 bg-white dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-[11px] text-slate-700 dark:text-slate-300 cursor-pointer font-medium" data-preset="this_month">This Month</button>
+            <button type="button" class="preset-btn px-2.5 py-1 bg-white dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-[11px] text-slate-700 dark:text-slate-300 cursor-pointer font-medium" data-preset="last_30">Last 30 Days</button>
+            <button type="button" class="preset-btn px-2.5 py-1 bg-white dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-[11px] text-slate-700 dark:text-slate-300 cursor-pointer font-medium" data-preset="all">All Time</button>
           </div>
         </div>
       </div>
 
       <!-- Range Results Cards -->
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div class="bg-slate-900 text-white rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+        <div class="bg-slate-900 dark:bg-slate-800 text-white rounded-2xl p-5 shadow-xs flex flex-col justify-between border border-slate-800 dark:border-slate-700">
           <div class="flex items-center justify-between text-xs text-slate-400">
             <span class="font-semibold uppercase tracking-wider">Range Net Balance</span>
             <span id="rangeCountDisplay" class="font-mono">0 entries</span>
@@ -339,38 +350,38 @@
           <p class="text-[11px] text-slate-400">Net balance between selected dates</p>
         </div>
 
-        <div class="bg-[#ecfdf5] border border-emerald-200/80 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
-          <div class="flex items-center justify-between text-xs text-emerald-800">
+        <div class="bg-[#ecfdf5] dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/60 rounded-2xl p-5 shadow-xs flex flex-col justify-between transition-colors">
+          <div class="flex items-center justify-between text-xs text-emerald-800 dark:text-emerald-300">
             <span class="font-semibold uppercase tracking-wider">Range Income</span>
-            <span id="rangeIncCount" class="font-bold bg-white px-2 py-0.5 rounded-md border border-emerald-200">0 entries</span>
+            <span id="rangeIncCount" class="font-bold bg-white dark:bg-slate-900 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800">0 entries</span>
           </div>
-          <div id="rangeIncomeDisplay" class="my-2 text-2xl sm:text-3xl font-black text-emerald-700">
+          <div id="rangeIncomeDisplay" class="my-2 text-2xl sm:text-3xl font-black text-emerald-700 dark:text-emerald-400">
             +$0.00
           </div>
-          <p id="rangeIncomeRatioText" class="text-[11px] text-emerald-700">0% of cash flow</p>
+          <p id="rangeIncomeRatioText" class="text-[11px] text-emerald-700 dark:text-emerald-400/80">0% of cash flow</p>
         </div>
 
-        <div class="bg-[#fff1f2] border border-rose-200/80 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
-          <div class="flex items-center justify-between text-xs text-rose-800">
+        <div class="bg-[#fff1f2] dark:bg-rose-950/40 border border-rose-200/80 dark:border-rose-800/60 rounded-2xl p-5 shadow-xs flex flex-col justify-between transition-colors">
+          <div class="flex items-center justify-between text-xs text-rose-800 dark:text-rose-300">
             <span class="font-semibold uppercase tracking-wider">Range Expenses</span>
-            <span id="rangeExpCount" class="font-bold bg-white px-2 py-0.5 rounded-md border border-rose-200">0 entries</span>
+            <span id="rangeExpCount" class="font-bold bg-white dark:bg-slate-900 px-2 py-0.5 rounded-md border border-rose-200 dark:border-rose-800">0 entries</span>
           </div>
-          <div id="rangeExpenseDisplay" class="my-2 text-2xl sm:text-3xl font-black text-rose-700">
+          <div id="rangeExpenseDisplay" class="my-2 text-2xl sm:text-3xl font-black text-rose-700 dark:text-rose-400">
             -$0.00
           </div>
-          <p id="rangeExpenseRatioText" class="text-[11px] text-rose-700">0% of cash flow</p>
+          <p id="rangeExpenseRatioText" class="text-[11px] text-rose-700 dark:text-rose-400/80">0% of cash flow</p>
         </div>
       </div>
 
       <!-- Range Transactions Table -->
-      <div class="bg-slate-50 rounded-2xl p-4 border border-slate-200 space-y-3">
-        <h4 class="font-bold text-xs text-slate-900 uppercase tracking-wider">
+      <div class="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 space-y-3 transition-colors">
+        <h4 class="font-bold text-xs text-slate-900 dark:text-white uppercase tracking-wider">
           Transactions in this Date Range
         </h4>
         <div class="overflow-x-auto max-h-60 overflow-y-auto">
           <table class="w-full text-left text-xs">
-            <thead class="sticky top-0 bg-slate-50">
-              <tr class="text-slate-400 border-b border-slate-200 font-semibold">
+            <thead class="sticky top-0 bg-slate-50 dark:bg-slate-800">
+              <tr class="text-slate-400 dark:text-slate-500 border-b border-slate-200 dark:border-slate-700 font-semibold">
                 <th class="pb-2 px-2">Date</th>
                 <th class="pb-2 px-2">Type</th>
                 <th class="pb-2 px-2">Category</th>
@@ -378,7 +389,7 @@
                 <th class="pb-2 px-2 text-right">Amount</th>
               </tr>
             </thead>
-            <tbody id="rangeTableBody" class="divide-y divide-slate-200/80">
+            <tbody id="rangeTableBody" class="divide-y divide-slate-200/80 dark:divide-slate-700">
               <!-- Populated by JS -->
             </tbody>
           </table>
@@ -390,16 +401,16 @@
 
   <!-- URL CONFIG MODAL -->
   <div id="urlModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
-      <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-        <h3 class="font-bold text-base text-slate-900">Google Apps Script URL</h3>
-        <button id="btnCloseModal" class="p-1 hover:bg-slate-100 rounded-lg cursor-pointer">
-          <i data-lucide="x" class="w-4 h-4 text-slate-500"></i>
+    <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 transition-colors">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-4">
+        <h3 class="font-bold text-base text-slate-900 dark:text-white">Google Apps Script URL</h3>
+        <button id="btnCloseModal" class="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg cursor-pointer">
+          <i data-lucide="x" class="w-4 h-4 text-slate-500 dark:text-slate-400"></i>
         </button>
       </div>
       <form id="urlForm" class="space-y-4">
-        <input type="url" required placeholder="https://script.google.com/macros/s/.../exec" id="urlInput" class="w-full px-3.5 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 font-mono" />
-        <button type="submit" class="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer">
+        <input type="url" required placeholder="https://script.google.com/macros/s/.../exec" id="urlInput" class="w-full px-3.5 py-2.5 text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-emerald-500 font-mono text-slate-800 dark:text-slate-100" />
+        <button type="submit" class="w-full py-3 bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer">
           Save & Sync
         </button>
       </form>
@@ -418,16 +429,22 @@
       income: ['Salary', 'Freelance', 'Business', 'Investments', 'Bonus', 'Gifts', 'Other Income'],
       expense: ['Transportation', 'Health & Wellness', 'Housing & Utilities', 'Food & Dining', 'Groceries', 'Coffee & Drinks', 'Shopping', 'Entertainment', 'Education', 'Other Expense']
     };
+    try {
+      const savedCats = localStorage.getItem('ledger_cached_categories_v2');
+      if (savedCats) {
+        const parsed = JSON.parse(savedCats);
+        if (parsed && Array.isArray(parsed.income) && Array.isArray(parsed.expense)) categories = parsed;
+      }
+    } catch(e) {}
 
-    let records = [
-      { id: 1, date: '2026-10-07', time: '10:15:30', timestamp: '2026-10-07 10:15:30', type: 'Expense', category: 'Transportation', amount: 100.0, note: 'ចាក់សាំងឡាន' },
-      { id: 2, date: '2026-10-07', time: '09:20:10', timestamp: '2026-10-07 09:20:10', type: 'Expense', category: 'Health & Wellness', amount: 10.0, note: 'ទិញថ្នាំ' },
-      { id: 3, date: '2026-10-07', time: '10:58:05', timestamp: '2026-10-07 10:58:05', type: 'Income', category: 'Wages/Salary', amount: 1000.0, note: 'Salary' },
-      { id: 4, date: '2026-10-07', time: '08:48:14', timestamp: '2026-10-07 08:48:14', type: 'Income', category: 'Business', amount: 10.0, note: 'Trade' },
-      { id: 5, date: '2026-10-06', time: '20:40:09', timestamp: '2026-10-06 20:40:09', type: 'Income', category: 'Wages/Salary', amount: 500.0, note: 'First Month of Coffee Shop Income' },
-      { id: 6, date: '2026-10-06', time: '20:55:38', timestamp: '2026-10-06 20:55:38', type: 'Income', category: 'Business', amount: 50.0, note: 'បានលុយពីtrade' },
-      { id: 7, date: '2026-10-06', time: '20:38:37', timestamp: '2026-10-06 20:38:37', type: 'Expense', category: 'Transportation', amount: 25.0, note: 'Gasoline' }
-    ];
+    let records = [];
+    try {
+      const savedRecs = localStorage.getItem('ledger_cached_transactions_v2');
+      if (savedRecs) {
+        const parsed = JSON.parse(savedRecs);
+        if (Array.isArray(parsed)) records = parsed;
+      }
+    } catch(e) {}
 
     function getDaunPenhNow() {
       const dtf = new Intl.DateTimeFormat('en-GB', {
@@ -612,6 +629,7 @@
       };
 
       records.unshift(newRec);
+      try { localStorage.setItem('ledger_cached_transactions_v2', JSON.stringify(records)); } catch(e) {}
       txAmount.value = '';
       txNote.value = '';
       renderDashboard();
@@ -868,10 +886,104 @@
       scriptUrl = urlInput.value.trim();
       localStorage.setItem(STORAGE_KEY, scriptUrl);
       urlModal.classList.add('hidden');
+      fetchSheetData();
     });
+
+    async function fetchSheetData() {
+      if (!scriptUrl) return;
+      if (refreshIcon) refreshIcon.classList.add('animate-spin');
+      try {
+        const res = await fetch(scriptUrl, { method: 'GET', redirect: 'follow' });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        if (data.status === 'success') {
+          if (data.categories) {
+            categories = {
+              income: data.categories.income?.length ? data.categories.income : categories.income,
+              expense: data.categories.expense?.length ? data.categories.expense : categories.expense
+            };
+            try { localStorage.setItem('ledger_cached_categories_v2', JSON.stringify(categories)); } catch(e) {}
+            updateCategories();
+          }
+          if (Array.isArray(data.records)) {
+            records = data.records.map((r, idx) => {
+              const parsedYMD = normalizeDateToYMD(r.timestamp) || normalizeDateToYMD(r.date) || getDaunPenhNow().dateYMD;
+              return {
+                id: String(r.id || idx + 1),
+                date: parsedYMD,
+                time: r.time || '',
+                timestamp: r.timestamp || '',
+                type: normalizeTransactionType(r.type),
+                category: String(r.category || 'Other').trim(),
+                amount: parseFloat(r.amount) || 0,
+                note: String(r.note || '')
+              };
+            }).reverse();
+            try { localStorage.setItem('ledger_cached_transactions_v2', JSON.stringify(records)); } catch(e) {}
+            renderDashboard();
+          }
+        }
+      } catch (err) {
+        console.warn('Sync error:', err);
+      } finally {
+        if (refreshIcon) refreshIcon.classList.remove('animate-spin');
+      }
+    }
+
+    if (btnRefresh) {
+      btnRefresh.addEventListener('click', fetchSheetData);
+    }
+
+    // Theme toggle logic
+    const btnToggleTheme = document.getElementById('btnToggleTheme');
+    const themeIcon = document.getElementById('themeIcon');
+    const themeText = document.getElementById('themeText');
+
+    function applyTheme(th) {
+      if (th === 'dark') {
+        document.documentElement.classList.add('dark');
+        if (themeIcon) {
+          themeIcon.setAttribute('data-lucide', 'sun');
+          themeIcon.className = 'w-4 h-4 text-amber-400';
+        }
+        if (themeText) {
+          themeText.textContent = 'Light';
+          themeText.className = 'font-semibold text-slate-200';
+        }
+      } else {
+        document.documentElement.classList.remove('dark');
+        if (themeIcon) {
+          themeIcon.setAttribute('data-lucide', 'moon');
+          themeIcon.className = 'w-4 h-4 text-indigo-500';
+        }
+        if (themeText) {
+          themeText.textContent = 'Dark';
+          themeText.className = 'font-semibold text-slate-700';
+        }
+      }
+      if (window.lucide) {
+        lucide.createIcons();
+      }
+    }
+
+    let savedTheme = localStorage.getItem('app_theme');
+    if (!savedTheme) {
+      savedTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    applyTheme(savedTheme);
+
+    if (btnToggleTheme) {
+      btnToggleTheme.addEventListener('click', () => {
+        const isDark = document.documentElement.classList.contains('dark');
+        const next = isDark ? 'light' : 'dark';
+        localStorage.setItem('app_theme', next);
+        applyTheme(next);
+      });
+    }
 
     updateCategories();
     renderDashboard();
+    fetchSheetData();
     lucide.createIcons();
   </script>
 </body>
