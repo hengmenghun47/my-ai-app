@@ -505,7 +505,7 @@ export default function App() {
     const incomeRatio = totalFlow > 0 ? Math.round((income / totalFlow) * 100) : 0;
     const expenseRatio = totalFlow > 0 ? Math.round((expense / totalFlow) * 100) : 0;
 
-    // Categories in this specific range
+    // Expense Categories in this specific range
     const expCatMap: Record<string, number> = {};
     rangeFilteredTransactions
       .filter((t) => t.type === 'Expense')
@@ -518,6 +518,19 @@ export default function App() {
       .map(([name, total]) => ({ name, total }))
       .sort((a, b) => b.total - a.total);
 
+    // Income Categories in this specific range
+    const incCatMap: Record<string, number> = {};
+    rangeFilteredTransactions
+      .filter((t) => t.type === 'Income')
+      .forEach((t) => {
+        const amt = Number(t.amount) || 0;
+        incCatMap[t.category] = (incCatMap[t.category] || 0) + amt;
+      });
+
+    const topIncomeCategories = Object.entries(incCatMap)
+      .map(([name, total]) => ({ name, total }))
+      .sort((a, b) => b.total - a.total);
+
     return {
       income,
       expense,
@@ -527,7 +540,8 @@ export default function App() {
       totalCount: rangeFilteredTransactions.length,
       incomeRatio,
       expenseRatio,
-      topExpenseCategories
+      topExpenseCategories,
+      topIncomeCategories
     };
   }, [rangeFilteredTransactions]);
 
@@ -1360,7 +1374,7 @@ function ensureSheetsInitialized(ss) {
                   <span className="text-xs font-normal text-slate-400">· គណនាតាមកាលបរិច្ឆេទ</span>
                 </h2>
                 <p className="text-xs text-slate-500">
-                  Select your date range and click <strong className="text-emerald-700">Calculate Data</strong> below
+                  Select your date range and type to view calculated income, expenses, and net balance
                 </p>
               </div>
             </div>
@@ -1376,11 +1390,11 @@ function ensureSheetsInitialized(ss) {
             </button>
           </div>
 
-          {/* DATE RANGE FILTER CONTROLS & CALCULATE ACTION */}
+          {/* DATE RANGE FILTER CONTROLS */}
           <div className="bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200 space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
-              {/* From Date */}
-              <div className="sm:col-span-3">
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3.5 items-end">
+              {/* From Date (4 cols) */}
+              <div className="sm:col-span-4">
                 <label className="block text-xs font-semibold text-slate-600 mb-1">
                   From Date · ចាប់ពីកាលបរិច្ឆេទ
                 </label>
@@ -1388,7 +1402,7 @@ function ensureSheetsInitialized(ss) {
                   type="date"
                   value={calcStartDate}
                   onChange={(e) => setCalcStartDate(e.target.value)}
-                  className="w-full px-3 py-2.5 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-600 font-mono text-slate-800"
+                  className="w-full px-3.5 py-2.5 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 font-mono text-slate-800"
                 />
                 {calcStartDate && (
                   <p className="text-[10px] text-slate-400 mt-1 font-mono">
@@ -1397,13 +1411,8 @@ function ensureSheetsInitialized(ss) {
                 )}
               </div>
 
-              {/* Arrow */}
-              <div className="hidden sm:flex sm:col-span-1 items-center justify-center pb-3 text-slate-400 font-bold">
-                <ChevronRight className="w-4 h-4" />
-              </div>
-
-              {/* To Date */}
-              <div className="sm:col-span-3">
+              {/* To Date (4 cols) */}
+              <div className="sm:col-span-4">
                 <label className="block text-xs font-semibold text-slate-600 mb-1">
                   To Date · ដល់កាលបរិច្ឆេទ
                 </label>
@@ -1411,7 +1420,7 @@ function ensureSheetsInitialized(ss) {
                   type="date"
                   value={calcEndDate}
                   onChange={(e) => setCalcEndDate(e.target.value)}
-                  className="w-full px-3 py-2.5 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-600 font-mono text-slate-800"
+                  className="w-full px-3.5 py-2.5 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 font-mono text-slate-800"
                 />
                 {calcEndDate && (
                   <p className="text-[10px] text-slate-400 mt-1 font-mono">
@@ -1420,21 +1429,21 @@ function ensureSheetsInitialized(ss) {
                 )}
               </div>
 
-              {/* Type Switcher */}
-              <div className="sm:col-span-2">
+              {/* Resized Type Switcher (4 cols - spacious with ample room for All / Income / Expense) */}
+              <div className="sm:col-span-4">
                 <label className="block text-xs font-semibold text-slate-600 mb-1">
                   Type · ប្រភេទ
                 </label>
-                <div className="flex items-center p-0.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold">
+                <div className="flex items-center p-1 bg-white border border-slate-200 rounded-xl text-xs font-semibold gap-1.5 shadow-2xs">
                   {(['All', 'Income', 'Expense'] as const).map((t) => (
                     <button
                       key={t}
                       type="button"
                       onClick={() => setCalcTypeFilter(t)}
-                      className={`flex-1 py-1.5 rounded-lg text-center transition-all cursor-pointer ${
+                      className={`flex-1 py-2 px-3 rounded-lg text-center transition-all cursor-pointer text-xs font-semibold whitespace-nowrap ${
                         calcTypeFilter === t
                           ? 'bg-slate-900 text-white shadow-xs'
-                          : 'text-slate-500 hover:text-slate-900'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                       }`}
                     >
                       {t}
@@ -1442,33 +1451,9 @@ function ensureSheetsInitialized(ss) {
                   ))}
                 </div>
               </div>
-
-              {/* PROMINENT "CALCULATE DATA FOR ME" BUTTON (REQUESTED BY USER) */}
-              <div className="sm:col-span-3">
-                <button
-                  type="button"
-                  id="btnCalculateData"
-                  onClick={handleCalculateData}
-                  disabled={isCalculating}
-                  className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-xs rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-                  title="Click to calculate total income, expenses, and net balance for selected dates"
-                >
-                  {isCalculating ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 animate-spin text-white" />
-                      <span>Calculating Data...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Calculator className="w-4 h-4 text-white" />
-                      <span>Calculate Data for Me · គណនា</span>
-                    </>
-                  )}
-                </button>
-              </div>
             </div>
 
-            {/* Quick Presets Row & Direct Big Calculate Action */}
+            {/* Quick Presets Row */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-slate-200/70 text-xs">
               <div className="flex items-center gap-1.5 flex-wrap">
                 <span className="text-[11px] font-semibold text-slate-500">Quick Presets:</span>
@@ -1528,28 +1513,6 @@ function ensureSheetsInitialized(ss) {
                 </button>
               </div>
             </div>
-
-            {/* FULL-WIDTH DEDICATED CALCULATE BAR FOR MAXIMUM VISIBILITY */}
-            <div className="pt-2">
-              <button
-                type="button"
-                onClick={handleCalculateData}
-                disabled={isCalculating}
-                className="w-full py-3 px-5 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:to-teal-800 text-white font-bold text-sm rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50"
-              >
-                {isCalculating ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin text-white" />
-                    <span>Calculating data for you... Please wait</span>
-                  </>
-                ) : (
-                  <>
-                    <Calculator className="w-5 h-5 text-emerald-200" />
-                    <span>Calculate Data for Me · គណនាទិន្នន័យសម្រាប់ខ្ញុំ</span>
-                  </>
-                )}
-              </button>
-            </div>
           </div>
 
           {/* CALCULATION STATUS & RESULTS BANNER */}
@@ -1559,16 +1522,36 @@ function ensureSheetsInitialized(ss) {
                 <Sparkles className="w-4 h-4 text-white" />
               </div>
               <div>
-                <p className="font-bold text-slate-900 text-xs sm:text-sm flex items-center gap-2">
-                  <span>{calculationSummary}</span>
-                  {lastCalculatedInfo && (
-                    <span className="text-[10px] font-medium bg-emerald-200/80 text-emerald-900 px-2 py-0.5 rounded-full">
-                      Calculated at {lastCalculatedInfo.calculatedAt} (GMT+7)
+                <p className="font-bold text-slate-900 text-xs sm:text-sm flex items-center gap-2 flex-wrap">
+                  {calcTypeFilter === 'Income' && (
+                    <span>
+                      Total Income Earned: <strong className="text-emerald-700">+{formatMoney(rangeMetrics.income)}</strong>
                     </span>
                   )}
+                  {calcTypeFilter === 'Expense' && (
+                    <span>
+                      Total Expenses Spent: <strong className="text-rose-700">-{formatMoney(rangeMetrics.expense)}</strong>
+                    </span>
+                  )}
+                  {calcTypeFilter === 'All' && (
+                    <span>
+                      Calculated Net Balance: <strong className={rangeMetrics.net >= 0 ? 'text-emerald-700' : 'text-rose-700'}>{rangeMetrics.net >= 0 ? '+' : '-'}{formatMoney(Math.abs(rangeMetrics.net))}</strong>
+                    </span>
+                  )}
+                  <span className="text-[10px] font-normal text-slate-500 font-mono">
+                    ({calcStartDate ? formatToDaunPenhDisplay(calcStartDate).dayMonthYear : 'Beginning'} → {calcEndDate ? formatToDaunPenhDisplay(calcEndDate).dayMonthYear : 'Today'})
+                  </span>
                 </p>
                 <p className="text-emerald-800 text-[11px] mt-0.5">
-                  Found <strong>{rangeMetrics.totalCount}</strong> transactions: <strong>+{formatMoney(rangeMetrics.income)}</strong> income ({rangeMetrics.countInc} entries) and <strong>-{formatMoney(rangeMetrics.expense)}</strong> expenses ({rangeMetrics.countExp} entries)
+                  {calcTypeFilter === 'Income' && (
+                    <span>Found <strong>{rangeMetrics.countInc}</strong> income transactions earned in this period</span>
+                  )}
+                  {calcTypeFilter === 'Expense' && (
+                    <span>Found <strong>{rangeMetrics.countExp}</strong> expense transactions spent in this period</span>
+                  )}
+                  {calcTypeFilter === 'All' && (
+                    <span>Found <strong>{rangeMetrics.totalCount}</strong> transactions: <strong>+{formatMoney(rangeMetrics.income)}</strong> earned ({rangeMetrics.countInc} entries) and <strong>-{formatMoney(rangeMetrics.expense)}</strong> spent ({rangeMetrics.countExp} entries)</span>
+                  )}
                 </p>
               </div>
             </div>
@@ -1579,61 +1562,163 @@ function ensureSheetsInitialized(ss) {
             </div>
           </div>
 
-          {/* CALCULATED RESULTS CARDS */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {/* Selected Range Net Balance */}
-            <div className="bg-slate-900 text-white rounded-2xl p-5 shadow-xs flex flex-col justify-between">
-              <div className="flex items-center justify-between text-xs text-slate-400">
-                <span className="font-semibold uppercase tracking-wider">Calculated Net Balance</span>
-                <span className="font-mono">{rangeMetrics.totalCount} entries</span>
-              </div>
-              <div className="my-2">
-                <div
-                  className={`text-2xl sm:text-3xl font-black tracking-tight ${
-                    rangeMetrics.net >= 0 ? 'text-emerald-400' : 'text-rose-400'
-                  }`}
-                >
-                  {rangeMetrics.net < 0 ? '-' : ''}
-                  {formatMoney(Math.abs(rangeMetrics.net))}
+          {/* DYNAMIC CALCULATED RESULTS CARDS */}
+          {calcTypeFilter === 'Income' && (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* Hero Total Earned */}
+              <div className="bg-[#ecfdf5] border-2 border-emerald-400 rounded-2xl p-5 shadow-sm flex flex-col justify-between">
+                <div className="flex items-center justify-between text-xs text-emerald-800">
+                  <span className="font-bold uppercase tracking-wider">Total Amount Earned · ចំណូលសរុប</span>
+                  <span className="font-bold bg-white px-2 py-0.5 rounded-md border border-emerald-200 font-mono text-emerald-800">
+                    {rangeMetrics.countInc} entries
+                  </span>
                 </div>
+                <div className="my-2 text-3xl sm:text-4xl font-black text-emerald-700 tracking-tight">
+                  +{formatMoney(rangeMetrics.income)}
+                </div>
+                <p className="text-[11px] text-emerald-800">
+                  Total money earned between {calcStartDate ? formatToDaunPenhDisplay(calcStartDate).dayMonthYear : 'beginning'} and {calcEndDate ? formatToDaunPenhDisplay(calcEndDate).dayMonthYear : 'today'}
+                </p>
               </div>
-              <p className="text-[11px] text-slate-400">
-                Net cash flow for the selected date range
-              </p>
-            </div>
 
-            {/* Selected Range Income */}
-            <div className="bg-[#ecfdf5] border border-emerald-200/80 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
-              <div className="flex items-center justify-between text-xs text-emerald-800">
-                <span className="font-semibold uppercase tracking-wider">Calculated Income</span>
-                <span className="font-bold bg-white px-2 py-0.5 rounded-md border border-emerald-200">
-                  {rangeMetrics.countInc} entries
-                </span>
+              {/* Average per Income Record */}
+              <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+                <div className="flex items-center justify-between text-xs text-slate-500">
+                  <span className="font-semibold uppercase tracking-wider">Average per Income Record</span>
+                  <span className="text-slate-400 font-mono">Avg</span>
+                </div>
+                <div className="my-2 text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                  +{formatMoney(rangeMetrics.countInc > 0 ? rangeMetrics.income / rangeMetrics.countInc : 0)}
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  Average amount across {rangeMetrics.countInc} income entries
+                </p>
               </div>
-              <div className="my-2 text-2xl sm:text-3xl font-black text-emerald-700">
-                +{formatMoney(rangeMetrics.income)}
-              </div>
-              <p className="text-[11px] text-emerald-700">
-                {rangeMetrics.incomeRatio}% of cash flow in this period
-              </p>
-            </div>
 
-            {/* Selected Range Expenses */}
-            <div className="bg-[#fff1f2] border border-rose-200/80 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
-              <div className="flex items-center justify-between text-xs text-rose-800">
-                <span className="font-semibold uppercase tracking-wider">Calculated Expenses</span>
-                <span className="font-bold bg-white px-2 py-0.5 rounded-md border border-rose-200">
-                  {rangeMetrics.countExp} entries
-                </span>
+              {/* Top Income Source */}
+              <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+                <div className="flex items-center justify-between text-xs text-slate-500">
+                  <span className="font-semibold uppercase tracking-wider">Top Income Source</span>
+                  <span className="text-emerald-600 font-semibold text-[11px]">Rank 1</span>
+                </div>
+                <div className="my-2 text-xl sm:text-2xl font-black text-emerald-700 truncate">
+                  {rangeMetrics.topIncomeCategories[0]?.name || 'No records'}
+                </div>
+                <p className="text-[11px] text-slate-500">
+                  {rangeMetrics.topIncomeCategories[0]
+                    ? `+${formatMoney(rangeMetrics.topIncomeCategories[0].total)} (${Math.round((rangeMetrics.topIncomeCategories[0].total / (rangeMetrics.income || 1)) * 100)}% of income)`
+                    : 'No income categories in this range'}
+                </p>
               </div>
-              <div className="my-2 text-2xl sm:text-3xl font-black text-rose-700">
-                -{formatMoney(rangeMetrics.expense)}
-              </div>
-              <p className="text-[11px] text-rose-700">
-                {rangeMetrics.expenseRatio}% of cash flow in this period
-              </p>
             </div>
-          </div>
+          )}
+
+          {calcTypeFilter === 'Expense' && (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* Hero Total Spent */}
+              <div className="bg-[#fff1f2] border-2 border-rose-400 rounded-2xl p-5 shadow-sm flex flex-col justify-between">
+                <div className="flex items-center justify-between text-xs text-rose-800">
+                  <span className="font-bold uppercase tracking-wider">Total Amount Spent · ការចំណាយសរុប</span>
+                  <span className="font-bold bg-white px-2 py-0.5 rounded-md border border-rose-200 font-mono text-rose-800">
+                    {rangeMetrics.countExp} entries
+                  </span>
+                </div>
+                <div className="my-2 text-3xl sm:text-4xl font-black text-rose-700 tracking-tight">
+                  -{formatMoney(rangeMetrics.expense)}
+                </div>
+                <p className="text-[11px] text-rose-800">
+                  Total money spent between {calcStartDate ? formatToDaunPenhDisplay(calcStartDate).dayMonthYear : 'beginning'} and {calcEndDate ? formatToDaunPenhDisplay(calcEndDate).dayMonthYear : 'today'}
+                </p>
+              </div>
+
+              {/* Average per Expense Record */}
+              <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+                <div className="flex items-center justify-between text-xs text-slate-500">
+                  <span className="font-semibold uppercase tracking-wider">Average per Expense Record</span>
+                  <span className="text-slate-400 font-mono">Avg</span>
+                </div>
+                <div className="my-2 text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                  -{formatMoney(rangeMetrics.countExp > 0 ? rangeMetrics.expense / rangeMetrics.countExp : 0)}
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  Average amount across {rangeMetrics.countExp} expense entries
+                </p>
+              </div>
+
+              {/* Top Expense Category */}
+              <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+                <div className="flex items-center justify-between text-xs text-slate-500">
+                  <span className="font-semibold uppercase tracking-wider">Top Spending Category</span>
+                  <span className="text-rose-600 font-semibold text-[11px]">Rank 1</span>
+                </div>
+                <div className="my-2 text-xl sm:text-2xl font-black text-rose-700 truncate">
+                  {rangeMetrics.topExpenseCategories[0]?.name || 'No records'}
+                </div>
+                <p className="text-[11px] text-slate-500">
+                  {rangeMetrics.topExpenseCategories[0]
+                    ? `-${formatMoney(rangeMetrics.topExpenseCategories[0].total)} (${Math.round((rangeMetrics.topExpenseCategories[0].total / (rangeMetrics.expense || 1)) * 100)}% of expenses)`
+                    : 'No expense categories in this range'}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {calcTypeFilter === 'All' && (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* Selected Range Net Balance */}
+              <div className="bg-slate-900 text-white rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+                <div className="flex items-center justify-between text-xs text-slate-400">
+                  <span className="font-semibold uppercase tracking-wider">Calculated Net Balance</span>
+                  <span className="font-mono">{rangeMetrics.totalCount} entries</span>
+                </div>
+                <div className="my-2">
+                  <div
+                    className={`text-2xl sm:text-3xl font-black tracking-tight ${
+                      rangeMetrics.net >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                    }`}
+                  >
+                    {rangeMetrics.net < 0 ? '-' : ''}
+                    {formatMoney(Math.abs(rangeMetrics.net))}
+                  </div>
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  Net cash flow for the selected date range
+                </p>
+              </div>
+
+              {/* Selected Range Income */}
+              <div className="bg-[#ecfdf5] border border-emerald-200/80 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+                <div className="flex items-center justify-between text-xs text-emerald-800">
+                  <span className="font-semibold uppercase tracking-wider">Total Earned (Income)</span>
+                  <span className="font-bold bg-white px-2 py-0.5 rounded-md border border-emerald-200">
+                    {rangeMetrics.countInc} entries
+                  </span>
+                </div>
+                <div className="my-2 text-2xl sm:text-3xl font-black text-emerald-700">
+                  +{formatMoney(rangeMetrics.income)}
+                </div>
+                <p className="text-[11px] text-emerald-700">
+                  {rangeMetrics.incomeRatio}% of cash flow in this period
+                </p>
+              </div>
+
+              {/* Selected Range Expenses */}
+              <div className="bg-[#fff1f2] border border-rose-200/80 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+                <div className="flex items-center justify-between text-xs text-rose-800">
+                  <span className="font-semibold uppercase tracking-wider">Total Spent (Expenses)</span>
+                  <span className="font-bold bg-white px-2 py-0.5 rounded-md border border-rose-200">
+                    {rangeMetrics.countExp} entries
+                  </span>
+                </div>
+                <div className="my-2 text-2xl sm:text-3xl font-black text-rose-700">
+                  -{formatMoney(rangeMetrics.expense)}
+                </div>
+                <p className="text-[11px] text-rose-700">
+                  {rangeMetrics.expenseRatio}% of cash flow in this period
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* CATEGORIES BREAKDOWN & TRANSACTIONS IN SELECTED RANGE */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start pt-1">
@@ -1642,38 +1727,73 @@ function ensureSheetsInitialized(ss) {
             <div className="lg:col-span-5 bg-slate-50 rounded-2xl p-5 border border-slate-200 space-y-3">
               <div className="flex items-center justify-between pb-2 border-b border-slate-200">
                 <h4 className="font-bold text-xs text-slate-900 uppercase tracking-wider">
-                  Spending by Category in Range
+                  {calcTypeFilter === 'Income'
+                    ? 'Income by Category in Range · ចំណូល'
+                    : calcTypeFilter === 'Expense'
+                    ? 'Spending by Category in Range · ចំណាយ'
+                    : 'Categories Breakdown in Range'}
                 </h4>
                 <span className="text-[11px] text-slate-400">Ranked</span>
               </div>
 
-              {rangeMetrics.topExpenseCategories.length === 0 ? (
-                <div className="py-6 text-center text-slate-400 text-xs">
-                  No expense records in this date range.
-                </div>
+              {calcTypeFilter === 'Income' ? (
+                rangeMetrics.topIncomeCategories.length === 0 ? (
+                  <div className="py-6 text-center text-slate-400 text-xs">
+                    No income records in this date range.
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {rangeMetrics.topIncomeCategories.map((cat) => {
+                      const pct = rangeMetrics.income > 0 ? Math.round((cat.total / rangeMetrics.income) * 100) : 0;
+                      return (
+                        <div key={cat.name} className="space-y-1">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-semibold text-slate-700">{cat.name}</span>
+                            <span className="font-mono text-emerald-700">
+                              <strong>+{formatMoney(cat.total)}</strong>{' '}
+                              <span className="text-slate-400 font-normal">({pct}%)</span>
+                            </span>
+                          </div>
+                          <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-emerald-600 rounded-full"
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )
               ) : (
-                <div className="space-y-3">
-                  {rangeMetrics.topExpenseCategories.map((cat) => {
-                    const pct = rangeMetrics.expense > 0 ? Math.round((cat.total / rangeMetrics.expense) * 100) : 0;
-                    return (
-                      <div key={cat.name} className="space-y-1">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="font-semibold text-slate-700">{cat.name}</span>
-                          <span className="font-mono text-slate-900">
-                            <strong>{formatMoney(cat.total)}</strong>{' '}
-                            <span className="text-slate-400 font-normal">({pct}%)</span>
-                          </span>
+                rangeMetrics.topExpenseCategories.length === 0 ? (
+                  <div className="py-6 text-center text-slate-400 text-xs">
+                    No expense records in this date range.
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {rangeMetrics.topExpenseCategories.map((cat) => {
+                      const pct = rangeMetrics.expense > 0 ? Math.round((cat.total / rangeMetrics.expense) * 100) : 0;
+                      return (
+                        <div key={cat.name} className="space-y-1">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-semibold text-slate-700">{cat.name}</span>
+                            <span className="font-mono text-rose-700">
+                              <strong>-{formatMoney(cat.total)}</strong>{' '}
+                              <span className="text-slate-400 font-normal">({pct}%)</span>
+                            </span>
+                          </div>
+                          <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-rose-600 rounded-full"
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
                         </div>
-                        <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-slate-800 rounded-full"
-                            style={{ width: `${pct}%` }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                )
               )}
             </div>
 

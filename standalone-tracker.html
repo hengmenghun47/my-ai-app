@@ -295,23 +295,22 @@
 
       <!-- Date Range Controls -->
       <div class="bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200 space-y-4">
-        <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+        <div class="grid grid-cols-1 sm:grid-cols-12 gap-3.5 items-end">
           <div class="sm:col-span-4">
             <label class="block text-xs font-semibold text-slate-600 mb-1">From Date · ចាប់ពីកាលបរិច្ឆេទ</label>
-            <input type="date" id="calcStartDate" class="w-full px-3 py-2.5 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-600 font-mono text-slate-800" />
-          </div>
-          <div class="hidden sm:flex sm:col-span-1 items-center justify-center pb-3 text-slate-400 font-bold">
-            →
+            <input type="date" id="calcStartDate" class="w-full px-3.5 py-2.5 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 font-mono text-slate-800" />
           </div>
           <div class="sm:col-span-4">
             <label class="block text-xs font-semibold text-slate-600 mb-1">To Date · ដល់កាលបរិច្ឆេទ</label>
-            <input type="date" id="calcEndDate" class="w-full px-3 py-2.5 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-600 font-mono text-slate-800" />
+            <input type="date" id="calcEndDate" class="w-full px-3.5 py-2.5 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 font-mono text-slate-800" />
           </div>
-          <div class="sm:col-span-3">
-            <button type="button" id="btnCalculateRange" class="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-xs rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer">
-              <i data-lucide="calculator" class="w-4 h-4"></i>
-              <span>Calculate Data · គណនា</span>
-            </button>
+          <div class="sm:col-span-4">
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Type · ប្រភេទ</label>
+            <div class="flex items-center p-1 bg-white border border-slate-200 rounded-xl text-xs font-semibold gap-1.5 shadow-2xs">
+              <button type="button" class="calc-type-btn flex-1 py-2 px-3 rounded-lg text-center transition-all cursor-pointer text-xs font-semibold whitespace-nowrap bg-slate-900 text-white shadow-xs" data-type="All">All</button>
+              <button type="button" class="calc-type-btn flex-1 py-2 px-3 rounded-lg text-center transition-all cursor-pointer text-xs font-semibold whitespace-nowrap text-slate-600 hover:text-slate-900 hover:bg-slate-100" data-type="Income">Income</button>
+              <button type="button" class="calc-type-btn flex-1 py-2 px-3 rounded-lg text-center transition-all cursor-pointer text-xs font-semibold whitespace-nowrap text-slate-600 hover:text-slate-900 hover:bg-slate-100" data-type="Expense">Expense</button>
+            </div>
           </div>
         </div>
 
@@ -319,19 +318,11 @@
         <div class="flex items-center justify-between flex-wrap gap-2 pt-2 border-t border-slate-200/70 text-xs">
           <div class="flex items-center gap-1.5 flex-wrap">
             <span class="text-[11px] font-semibold text-slate-400">Quick:</span>
-            <button type="button" class="preset-btn px-2.5 py-1 bg-white hover:bg-slate-200 border border-slate-200 rounded-lg text-[11px] text-slate-700 cursor-pointer" data-preset="today">Today</button>
-            <button type="button" class="preset-btn px-2.5 py-1 bg-white hover:bg-slate-200 border border-slate-200 rounded-lg text-[11px] text-slate-700 cursor-pointer" data-preset="this_month">This Month</button>
-            <button type="button" class="preset-btn px-2.5 py-1 bg-white hover:bg-slate-200 border border-slate-200 rounded-lg text-[11px] text-slate-700 cursor-pointer" data-preset="last_30">Last 30 Days</button>
-            <button type="button" class="preset-btn px-2.5 py-1 bg-white hover:bg-slate-200 border border-slate-200 rounded-lg text-[11px] text-slate-700 cursor-pointer" data-preset="all">All Time</button>
+            <button type="button" class="preset-btn px-2.5 py-1 bg-white hover:bg-slate-200 border border-slate-200 rounded-lg text-[11px] text-slate-700 cursor-pointer font-medium" data-preset="today">Today</button>
+            <button type="button" class="preset-btn px-2.5 py-1 bg-white hover:bg-slate-200 border border-slate-200 rounded-lg text-[11px] text-slate-700 cursor-pointer font-medium" data-preset="this_month">This Month</button>
+            <button type="button" class="preset-btn px-2.5 py-1 bg-white hover:bg-slate-200 border border-slate-200 rounded-lg text-[11px] text-slate-700 cursor-pointer font-medium" data-preset="last_30">Last 30 Days</button>
+            <button type="button" class="preset-btn px-2.5 py-1 bg-white hover:bg-slate-200 border border-slate-200 rounded-lg text-[11px] text-slate-700 cursor-pointer font-medium" data-preset="all">All Time</button>
           </div>
-        </div>
-
-        <!-- Dedicated Full-Width Calculate Button -->
-        <div class="pt-1">
-          <button type="button" id="btnCalculateRangeBig" class="w-full py-3 px-5 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:to-teal-800 text-white font-bold text-sm rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2.5 cursor-pointer">
-            <i data-lucide="calculator" class="w-5 h-5 text-emerald-200"></i>
-            <span>Calculate Data for Me · គណនាទិន្នន័យសម្រាប់ខ្ញុំ</span>
-          </button>
         </div>
       </div>
 
@@ -706,6 +697,7 @@
     }
 
     // Render Range Calculation
+    let currentRangeType = 'All';
     function renderRangeCalculation() {
       const start = calcStartDate.value;
       const end = calcEndDate.value;
@@ -715,7 +707,8 @@
       const inRange = records.filter(r => {
         const afterStart = !start || r.date >= start;
         const beforeEnd = !end || r.date <= end;
-        return afterStart && beforeEnd;
+        const matchType = currentRangeType === 'All' || r.type === currentRangeType;
+        return afterStart && beforeEnd && matchType;
       });
 
       let inc = 0, exp = 0, countInc = 0, countExp = 0;
@@ -735,11 +728,17 @@
       rangeIncCount.textContent = `${countInc} entries`;
       rangeExpCount.textContent = `${countExp} entries`;
 
-      const totalFlow = inc + exp;
-      const incPct = totalFlow > 0 ? Math.round((inc / totalFlow) * 100) : 0;
-      const expPct = totalFlow > 0 ? Math.round((exp / totalFlow) * 100) : 0;
-      rangeIncomeRatioText.textContent = `${incPct}% of cash flow in this period`;
-      rangeExpenseRatioText.textContent = `${expPct}% of cash flow in this period`;
+      if (currentRangeType === 'Income') {
+        rangeIncomeRatioText.textContent = `Total income earned from ${start || 'all'} to ${end || 'today'}`;
+      } else if (currentRangeType === 'Expense') {
+        rangeExpenseRatioText.textContent = `Total expenses spent from ${start || 'all'} to ${end || 'today'}`;
+      } else {
+        const totalFlow = inc + exp;
+        const incPct = totalFlow > 0 ? Math.round((inc / totalFlow) * 100) : 0;
+        const expPct = totalFlow > 0 ? Math.round((exp / totalFlow) * 100) : 0;
+        rangeIncomeRatioText.textContent = `${incPct}% of cash flow in this period`;
+        rangeExpenseRatioText.textContent = `${expPct}% of cash flow in this period`;
+      }
 
       if (inRange.length === 0) {
         rangeTableBody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-slate-400">No transactions in this date range.</td></tr>`;
@@ -766,23 +765,16 @@
     calcStartDate.addEventListener('change', renderRangeCalculation);
     calcEndDate.addEventListener('change', renderRangeCalculation);
 
-    function triggerCalculateAction() {
-      renderRangeCalculation();
-      const s = calcStartDate.value || 'Beginning';
-      const e = calcEndDate.value || 'Today';
-      showToast(`Calculated data from ${s} to ${e}!`, 'success');
-      // Briefly flash the net balance card for high visual feedback
-      if (rangeNetDisplay) {
-        rangeNetDisplay.classList.add('scale-105', 'transition-transform');
-        setTimeout(() => rangeNetDisplay.classList.remove('scale-105'), 300);
-      }
-    }
-
-    const btnCalc = document.getElementById('btnCalculateRange');
-    if (btnCalc) btnCalc.addEventListener('click', triggerCalculateAction);
-
-    const btnCalcBig = document.getElementById('btnCalculateRangeBig');
-    if (btnCalcBig) btnCalcBig.addEventListener('click', triggerCalculateAction);
+    document.querySelectorAll('.calc-type-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.calc-type-btn').forEach(b => {
+          b.className = 'calc-type-btn flex-1 py-2 px-3 rounded-lg text-center transition-all cursor-pointer text-xs font-semibold whitespace-nowrap text-slate-600 hover:text-slate-900 hover:bg-slate-100';
+        });
+        btn.className = 'calc-type-btn flex-1 py-2 px-3 rounded-lg text-center transition-all cursor-pointer text-xs font-semibold whitespace-nowrap bg-slate-900 text-white shadow-xs';
+        currentRangeType = btn.getAttribute('data-type');
+        renderRangeCalculation();
+      });
+    });
 
     // Preset handlers
     document.querySelectorAll('.preset-btn').forEach(btn => {
